@@ -369,10 +369,13 @@ Page({
       const dx = touches[0].x - t.x;
       const dy = touches[0].y - t.y;
       if (Math.abs(dx) > 6 || Math.abs(dy) > 6) this.moved = true;
+      const prevTx = this.view.tx;
+      const prevTy = this.view.ty;
       this.view.tx = t.tx + dx;
       this.view.ty = t.ty + dy;
       this.clampView();
-      this.redraw();
+      // 缩放为 1 时内容正好铺满，拖动不会改变视图 —— 别白白重绘五万格
+      if (this.view.tx !== prevTx || this.view.ty !== prevTy) this.redraw();
     } else if (t.mode === 'pinch' && touches.length >= 2) {
       const a = touches[0];
       const b = touches[1];
@@ -591,6 +594,18 @@ Page({
         wx.showModal({
           title: '格子比较密',
           content: `图纸 ${this.dims.N}×${this.dims.M}，格内色号会比较小、不易辨认。建议降低格子数，或关闭「格内色号」。仍要导出吗？`,
+          confirmText: '仍要导出',
+          success: resolve,
+          fail: () => resolve({ confirm: false }),
+        });
+      });
+      if (!modal.confirm) return;
+    } else if (plan.cellNumbersDropped) {
+      // 格子太密，格内色号画不下会自动省略 —— 提示一下，别让人以为导出坏了
+      const modal = await new Promise((resolve) => {
+        wx.showModal({
+          title: '格内色号已省略',
+          content: `图纸 ${this.dims.N}×${this.dims.M} 格子太密，每格只有 ${plan.cell}px，色号写不下会被省略。想带着色号导出的话，把格子数降到 200 以内。仍要导出吗？`,
           confirmText: '仍要导出',
           success: resolve,
           fail: () => resolve({ confirm: false }),

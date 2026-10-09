@@ -87,6 +87,8 @@ function computeLayout(dims, options, cell, colorCount, colsOverride) {
     /** 格内色号字号：随格子缩放，太小就不画 */
     cellFontSize: Math.max(6, Math.floor(cell * 0.4)),
     canDrawCellNumbers: showCellNumbers && cell >= 12,
+    /** 用户开了格内色号，但格子太小画不下 —— 导出前要提示，别让人以为坏了 */
+    cellNumbersDropped: showCellNumbers && cell < 12,
     gridInterval: options.gridInterval || 10,
     gridLineColor: options.gridLineColor || '#555555',
   };

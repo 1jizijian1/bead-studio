@@ -16,8 +16,9 @@ const SETTINGS_KEY = 'beadSettings';
  *
  * v2：颜色合并阈值默认值从 30 改成 8（30 会把照片合并成一团近黑，见 constants.js 的说明）。
  *     老用户存过 30，不迁移的话改了默认也没用。
+ * v3：默认格子数从 100 改成 300（100 档照片细节丢太多）。
  */
-const SETTINGS_VERSION = 2;
+const SETTINGS_VERSION = 3;
 
 const DEFAULT_SETTINGS = {
   version: SETTINGS_VERSION,

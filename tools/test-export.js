@@ -123,6 +123,24 @@ ok('关闭坐标轴和清单后图纸变小', () => {
   assert.ok(without.h < withAll.h, '关清单后高度应该变小');
 });
 
+ok('格子太密时标记「格内色号会被省略」', () => {
+  // N=300 时导出每格只有约 9px，色号写不下；用户开着格内色号却静默省略会以为坏了
+  const big = planExport({ N: 300, M: 300 }, options, constants.MAX_EXPORT_EDGE, 20);
+  assert.ok(big.cell < 12, `格子应小于 12px，实际 ${big.cell}`);
+  assert.strictEqual(big.cellNumbersDropped, true);
+  assert.strictEqual(big.canDrawCellNumbers, false);
+
+  const small = planExport({ N: 40, M: 40 }, options, constants.MAX_EXPORT_EDGE, 10);
+  assert.strictEqual(small.cellNumbersDropped, false);
+  assert.strictEqual(small.canDrawCellNumbers, true);
+});
+
+ok('关掉格内色号时不算「被省略」', () => {
+  const noNums = Object.assign({}, options, { showCellNumbers: false });
+  const plan = planExport({ N: 300, M: 300 }, noNums, constants.MAX_EXPORT_EDGE, 20);
+  assert.strictEqual(plan.cellNumbersDropped, false);
+});
+
 ok('漏传 colorCount 时仍为清单区预留高度（回归）', () => {
   // editor 曾经漏传 colorCount，导致清单高度算成 0 却仍要绘制 -> 清单被画到画布外
   const noStats = planExport(
