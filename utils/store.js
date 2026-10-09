@@ -8,6 +8,7 @@
  *   3. 页面间小参数 -> URL query（调用方自己 encodeURIComponent）
  */
 const constants = require('./constants');
+const size = require('./size');
 
 const SETTINGS_KEY = 'beadSettings';
 
@@ -17,13 +18,18 @@ const SETTINGS_KEY = 'beadSettings';
  * v2：颜色合并阈值默认值从 30 改成 8（30 会把照片合并成一团近黑，见 constants.js 的说明）。
  *     老用户存过 30，不迁移的话改了默认也没用。
  * v3：默认格子数从 100 改成 300（100 档照片细节丢太多）。
+ * v4：参数从「横轴格子数」改成「成品宽度(cm) + 豆距(mm)」——
+ *     拼豆的人想的是成品多大，不是横轴多少格。granularity 变成派生量，不再存。
  */
-const SETTINGS_VERSION = 3;
+const SETTINGS_VERSION = 4;
 
 const DEFAULT_SETTINGS = {
   version: SETTINGS_VERSION,
   colorSystem: constants.DEFAULT_COLOR_SYSTEM,
-  granularity: constants.DEFAULT_GRANULARITY,
+  /** 成品宽度（厘米） */
+  widthCm: size.DEFAULT_WIDTH_CM,
+  /** 豆距（毫米）：5 标准豆 / 2.6 迷你豆 */
+  beadPitch: size.DEFAULT_BEAD_PITCH,
   threshold: constants.DEFAULT_THRESHOLD,
   minRegion: constants.DEFAULT_MIN_REGION,
   mode: constants.DEFAULT_MODE,

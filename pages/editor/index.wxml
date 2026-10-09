@@ -70,14 +70,38 @@
   <view class="panel">
     <view class="param">
       <view class="param-head">
-        <text class="param-name">横轴格子数</text>
-        <text class="param-value">{{granularity}}</text>
+        <text class="param-name">豆子尺寸</text>
+      </view>
+      <view class="segmented">
+        <view
+          class="seg {{beadPitch === item.value ? 'seg-on' : ''}}"
+          wx:for="{{pitches}}" wx:key="value"
+          data-pitch="{{item.value}}" bindtap="onPitchChange"
+        >{{item.label}}</view>
+      </view>
+      <view class="param-hint">标准的 5mm 豆最常见；迷你 2.6mm 成品只有一半大</view>
+    </view>
+
+    <view class="param">
+      <view class="param-head">
+        <text class="param-name">成品宽度</text>
+        <text class="param-value">{{widthCm}} cm</text>
       </view>
       <slider
-        min="{{granularityMin}}" max="{{granularityMax}}" value="{{granularity}}"
+        min="{{widthMin}}" max="{{widthMax}}" value="{{widthCm}}"
         block-size="22" activeColor="#6366f1" backgroundColor="#e5e7eb"
-        bindchanging="onGranularityChanging" bindchange="onGranularityChange"
+        bindchanging="onWidthChanging" bindchange="onWidthChange"
       />
+      <view class="size-readout {{tooBig ? 'size-readout-warn' : ''}}">
+        <text>约 {{sizeText}}</text>
+        <text class="readout-dot">·</text>
+        <text>{{gridText}}</text>
+        <text class="readout-dot">·</text>
+        <text>{{boardText}}</text>
+      </view>
+      <view class="param-hint warn" wx:if="{{tooBig}}">
+        成品偏大，手工拼会很久。调小宽度、或换成迷你豆会好拼很多。
+      </view>
     </view>
 
     <view class="param">

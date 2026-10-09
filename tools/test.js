@@ -204,6 +204,60 @@ ok('阈值 0 时不合并任何颜色', () => {
   assert.strictEqual(mergedCount, 0);
 });
 
+console.log('\n[size 成品尺寸]');
+const sizeUtil = require('../utils/size');
+
+ok('成品宽度 -> 横轴格子数（5mm 豆）', () => {
+  assert.strictEqual(sizeUtil.columnsForWidth(30, 5), 60);
+  assert.strictEqual(sizeUtil.columnsForWidth(15, 5), 30);
+  assert.strictEqual(sizeUtil.columnsForWidth(150, 5), 300);
+});
+
+ok('迷你豆 2.6mm 同样宽度格子更多', () => {
+  assert.strictEqual(sizeUtil.columnsForWidth(30, 2.6), 115);
+  const std = sizeUtil.describeSize({ N: 60, M: 34 }, 5);
+  const mini = sizeUtil.describeSize({ N: 115, M: 65 }, 2.6);
+  // 两种豆拼出来的成品应该差不多大
+  assert.ok(Math.abs(std.widthCm - mini.widthCm) < 1, `${std.widthCm} vs ${mini.widthCm}`);
+});
+
+ok('格子数 <-> 宽度 可以来回换算', () => {
+  for (const pitch of [5, 2.6]) {
+    for (const w of [10, 30, 60]) {
+      const N = sizeUtil.columnsForWidth(w, pitch);
+      const back = sizeUtil.widthForColumns(N, pitch);
+      assert.ok(Math.abs(back - w) <= pitch / 10, `pitch=${pitch} w=${w} 回算出 ${back}`);
+    }
+  }
+});
+
+ok('成品尺寸与拼豆板数量', () => {
+  const info = sizeUtil.describeSize({ N: 60, M: 34 }, 5);
+  assert.strictEqual(info.widthCm, 30);
+  assert.strictEqual(info.heightCm, 17);
+  // 60 格要 3 块板宽（29*2=58 不够），34 格要 2 块板高
+  assert.strictEqual(info.boardsW, 3);
+  assert.strictEqual(info.boardsH, 2);
+  assert.strictEqual(info.boardCount, 6);
+  assert.strictEqual(info.tooBig, false);
+  assert.strictEqual(info.sizeText, '30.0 × 17.0 cm');
+});
+
+ok('N=300 会被标记为「大工程」', () => {
+  const info = sizeUtil.describeSize({ N: 300, M: 169 }, 5);
+  assert.strictEqual(info.boardsW, 11);
+  assert.strictEqual(info.boardsH, 6);
+  assert.strictEqual(info.boardCount, 66);
+  assert.strictEqual(info.tooBig, true);
+  assert.strictEqual(info.widthCm, 150);
+});
+
+ok('1 块板是小件，不会被提醒', () => {
+  const info = sizeUtil.describeSize({ N: 29, M: 29 }, 5);
+  assert.strictEqual(info.boardCount, 1);
+  assert.strictEqual(info.tooBig, false);
+});
+
 console.log('\n[cleanup 杂色清理]');
 const { despeckle } = require('../utils/cleanup');
 const cellOf = (hex) => ({ key: hex, color: hex });

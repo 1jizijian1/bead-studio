@@ -37,6 +37,14 @@
         <text wx:else>当前：{{colorSystem}} 全色板</text>
       </view>
     </view>
+
+    <view class="tip-card">
+      <view class="tip-card-title">选什么图效果好？</view>
+      <view class="tip-card-body">
+        拼豆是扁平色块的活儿 —— 卡通、logo、像素画这类图出来最干净。
+        照片也能转，但颜色会被压扁、细节会丢，尺寸还容易做得很大。
+      </view>
+    </view>
   </view>
 
   <!-- 继续上次 -->

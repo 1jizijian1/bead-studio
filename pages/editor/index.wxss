@@ -225,6 +225,33 @@
   line-height: 1.5;
 }
 
+.param-hint.warn {
+  color: #d97706;
+}
+
+/* 成品尺寸实时读数 */
+.size-readout {
+  margin-top: 12rpx;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  font-size: 24rpx;
+  color: #4b5563;
+  background: #f3f4f6;
+  border-radius: 12rpx;
+  padding: 14rpx 20rpx;
+}
+
+.size-readout-warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.readout-dot {
+  color: #9ca3af;
+}
+
 .segmented {
   display: flex;
   gap: 12rpx;

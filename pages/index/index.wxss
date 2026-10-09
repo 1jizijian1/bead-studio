@@ -118,6 +118,28 @@
   color: #6b7280;
 }
 
+/* ---------- 选图建议 ---------- */
+.tip-card {
+  margin-top: 8rpx;
+  padding: 28rpx 32rpx;
+  border-radius: 20rpx;
+  background: #eef2ff;
+  border-left: 6rpx solid #6366f1;
+}
+
+.tip-card-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #4338ca;
+}
+
+.tip-card-body {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #4f46e5;
+}
+
 /* ---------- 继续上次 ---------- */
 .resume {
   margin-top: 40rpx;

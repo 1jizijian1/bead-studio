@@ -9,6 +9,7 @@ const { computeStats, cloneGrid, sortedColorStats } = require('../../utils/stats
 const { removeBackground } = require('../../utils/background');
 const { excludeColor } = require('../../utils/exclude');
 const { despeckle } = require('../../utils/cleanup');
+const size = require('../../utils/size');
 const exportPattern = require('../../utils/exportPattern');
 
 const app = getApp();
@@ -21,9 +22,15 @@ Page({
     colorList: [],
     totalBeadCount: 0,
 
-    granularity: constants.DEFAULT_GRANULARITY,
-    granularityMin: constants.GRANULARITY_MIN,
-    granularityMax: constants.GRANULARITY_MAX,
+    widthCm: size.DEFAULT_WIDTH_CM,
+    widthMin: size.WIDTH_MIN_CM,
+    widthMax: size.WIDTH_MAX_CM,
+    beadPitch: size.DEFAULT_BEAD_PITCH,
+    pitches: size.BEAD_PITCHES,
+    sizeText: '',
+    boardText: '',
+    gridText: '',
+    tooBig: false,
 
     threshold: constants.DEFAULT_THRESHOLD,
     thresholdMin: constants.THRESHOLD_MIN,
@@ -61,6 +68,9 @@ Page({
     this.src = options.src ? decodeURIComponent(options.src) : picked && picked.path;
     this.resume = options.resume === '1';
 
+    // 图片宽高比：把「横轴格子数」换算成「纵向格子数」，用于尺寸预估
+    this.aspect = picked && picked.width ? picked.height / picked.width : 1;
+
     this.grid = null;
     this.dims = null;
     this.mapper = null;
@@ -76,7 +86,9 @@ Page({
 
     const mode = constants.MODES.find((m) => m.value === settings.mode) || constants.MODES[0];
     this.setData({
-      granularity: settings.granularity,
+      widthCm: settings.widthCm,
+      widthMax: this.maxWidthForPitch(settings.beadPitch),
+      beadPitch: settings.beadPitch,
       threshold: settings.threshold,
       minRegion: settings.minRegion,
       speckleText: this.speckleLabel(settings.minRegion),
@@ -84,6 +96,7 @@ Page({
       modeDesc: mode.desc,
       colorSystem: settings.colorSystem,
     });
+    this.updateSizeReadout();
 
     if (!this.src) {
       wx.showToast({ title: '没有可用的图片', icon: 'none' });
@@ -119,6 +132,40 @@ Page({
     await this.generate();
   },
 
+  // ---------- 尺寸换算 ----------
+
+  /** 豆距越大，同样格数成品越大；滑块上限要跟着豆距走，否则会顶到格子数上限 */
+  maxWidthForPitch(pitchMm) {
+    return Math.min(
+      size.WIDTH_MAX_CM,
+      Math.round((constants.GRANULARITY_MAX * pitchMm) / 10)
+    );
+  },
+
+  /** 「成品宽度 + 豆距」-> 网格尺寸 */
+  computeDims(widthCm, pitchMm) {
+    const N = Math.max(
+      constants.GRANULARITY_MIN,
+      Math.min(constants.GRANULARITY_MAX, size.columnsForWidth(widthCm, pitchMm))
+    );
+    const M = Math.max(1, Math.round(N * this.aspect));
+    return { N, M };
+  },
+
+  /** 刷新「30×17 cm · 6 块板」这行实时读数 */
+  updateSizeReadout(widthCm, pitchMm, dims) {
+    const w = widthCm === undefined ? this.data.widthCm : widthCm;
+    const p = pitchMm === undefined ? this.data.beadPitch : pitchMm;
+    const d = dims || this.computeDims(w, p);
+    const info = size.describeSize(d, p);
+    this.setData({
+      sizeText: info.sizeText,
+      boardText: info.boardText,
+      gridText: info.gridText,
+      tooBig: info.tooBig,
+    });
+  },
+
   // ---------- 生成 ----------
 
   getActivePalette() {
@@ -146,7 +193,9 @@ Page({
 
     try {
       const sample = await this.ensureSample();
-      const N = settings.granularity;
+      // 格子数由「成品宽度 + 豆距」派生，不再是用户直接调的参数
+      const planned = this.computeDims(settings.widthCm, settings.beadPitch);
+      const N = planned.N;
       const M = Math.max(1, Math.round((N * sample.sampleH) / sample.sampleW));
 
       const activePalette = this.getActivePalette();
@@ -241,6 +290,8 @@ Page({
       totalBeadCount: stats.totalBeadCount,
       dims: this.dims,
     });
+    // 尺寸读数用真实网格尺寸（不是预估），排除色/去背景后总数变了也要跟着更新
+    this.updateSizeReadout(undefined, undefined, this.dims);
   },
 
   // ---------- 绘制 ----------
@@ -445,14 +496,27 @@ Page({
 
   // ---------- 参数 ----------
 
-  onGranularityChanging(e) {
-    this.setData({ granularity: e.detail.value }); // 拖动中只更新数字，不重算
+  onWidthChanging(e) {
+    const widthCm = e.detail.value;
+    this.setData({ widthCm }); // 拖动中只更新读数和预览尺寸，不重算
+    this.updateSizeReadout(widthCm);
   },
 
-  onGranularityChange(e) {
-    const granularity = e.detail.value;
-    this.setData({ granularity });
-    store.updateSettings({ granularity });
+  onWidthChange(e) {
+    const widthCm = e.detail.value;
+    this.setData({ widthCm });
+    store.updateSettings({ widthCm });
+    this.generate();
+  },
+
+  onPitchChange(e) {
+    const beadPitch = parseFloat(e.currentTarget.dataset.pitch);
+    if (beadPitch === this.data.beadPitch) return;
+    // 换豆距会改变格子数与滑块上限，把宽度夹到新上限内
+    const widthMax = this.maxWidthForPitch(beadPitch);
+    const widthCm = Math.min(this.data.widthCm, widthMax);
+    this.setData({ beadPitch, widthMax, widthCm });
+    store.updateSettings({ beadPitch, widthCm });
     this.generate();
   },
 
