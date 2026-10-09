@@ -38,6 +38,13 @@
       </view>
     </view>
 
+    <view class="pick-card secondary" wx:if="{{hasProjects}}" bindtap="onOpenProjects" hover-class="pick-card-hover">
+      <view class="pick-title small">我的拼豆</view>
+      <view class="pick-desc">
+        {{projectCount}} 个在拼 · 最近一个拼到 {{topPercent}}%
+      </view>
+    </view>
+
     <view class="tip-card">
       <view class="tip-card-title">选什么图效果好？</view>
       <view class="tip-card-body">
@@ -45,11 +52,6 @@
         照片也能转，但颜色会被压扁、细节会丢，尺寸还容易做得很大。
       </view>
     </view>
-  </view>
-
-  <!-- 继续上次 -->
-  <view class="resume" wx:if="{{hasResult}}" bindtap="onResume">
-    继续编辑上次的图纸（{{lastGridText}}）
   </view>
 
   <view class="footer">

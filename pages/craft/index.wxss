@@ -1,0 +1,254 @@
+/* 整页不滚动：手势全在画布上，页面滚动会和拖动打架 */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 0 24rpx;
+  box-sizing: border-box;
+}
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  height: 88rpx;
+  flex-shrink: 0;
+}
+
+.back {
+  font-size: 28rpx;
+  color: #6366f1;
+  width: 140rpx;
+}
+
+.title {
+  flex: 1;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1f2937;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.reset {
+  width: 140rpx;
+  text-align: right;
+  font-size: 26rpx;
+  color: #9ca3af;
+}
+
+/* ---------- 总进度 ---------- */
+.overall {
+  flex-shrink: 0;
+  padding: 8rpx 0 20rpx;
+}
+
+.overall-bar {
+  height: 16rpx;
+  background: #e5e7eb;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.overall-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #10b981);
+  border-radius: 8rpx;
+  transition: width 0.18s linear;
+}
+
+.overall-text {
+  margin-top: 12rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.pct {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.cnt {
+  font-size: 24rpx;
+  color: #6b7280;
+}
+
+/* ---------- 当前色 + 工具 ---------- */
+.toolbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12rpx 0 20rpx;
+}
+
+.cur {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.cur-swatch {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.1);
+}
+
+.cur-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.cur-label {
+  font-size: 20rpx;
+  color: #9ca3af;
+}
+
+.cur-key {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.tools {
+  display: flex;
+  gap: 12rpx;
+}
+
+.tool {
+  padding: 12rpx 22rpx;
+  border-radius: 12rpx;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 24rpx;
+}
+
+.tool-on {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.tool-dim {
+  color: #d1d5db;
+}
+
+/* ---------- 画布 ---------- */
+.canvas-wrap {
+  flex: 1;
+  min-height: 0; /* 关键：不加的话 flex 子项会被内容撑开，尺寸测不准 */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+
+.pattern {
+  display: block;
+}
+
+.zoom-badge {
+  position: absolute;
+  right: 16rpx;
+  bottom: 16rpx;
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(31, 41, 55, 0.85);
+  color: #ffffff;
+  font-size: 22rpx;
+}
+
+.save-warn {
+  position: absolute;
+  left: 16rpx;
+  top: 16rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 20rpx;
+}
+
+.hint {
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 20rpx;
+  color: #9ca3af;
+  padding: 16rpx 0 8rpx;
+}
+
+/* ---------- 色号列表 ---------- */
+.strip {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+}
+
+.chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+  margin-right: 14rpx;
+  padding: 12rpx 16rpx;
+  background: #ffffff;
+  border-radius: 14rpx;
+  border: 3rpx solid transparent;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.chip-cur {
+  border-color: #6366f1;
+}
+
+.chip-done {
+  opacity: 0.55;
+}
+
+.chip-swatch {
+  position: relative;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 10rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chip-check {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 0 6rpx rgba(0, 0, 0, 0.6);
+}
+
+.chip-key {
+  font-size: 20rpx;
+  color: #374151;
+  font-weight: 600;
+}
+
+.chip-num {
+  font-size: 18rpx;
+  color: #9ca3af;
+}
+
+/* ---------- 加载态 ---------- */
+.loading {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  font-size: 28rpx;
+}

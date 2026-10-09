@@ -1,4 +1,5 @@
 const store = require('../../utils/store');
+const projectStore = require('../../utils/projectStore');
 
 const app = getApp();
 
@@ -6,19 +7,26 @@ Page({
   data: {
     colorSystem: 'MARD',
     paletteSummary: '',
-    hasResult: false,
-    lastGridText: '',
+    hasProjects: false,
+    projectCount: 0,
+    topPercent: 0,
   },
 
   onShow() {
     const settings = store.getSettings();
-    const result = app.globalData.result;
+    const projects = projectStore.listProjects();
+    const top = projects[0];
     this.setData({
       colorSystem: settings.colorSystem,
       paletteSummary: this.buildPaletteSummary(settings),
-      hasResult: !!(result && result.grid),
-      lastGridText: result && result.dims ? `${result.dims.N}×${result.dims.M}` : '',
+      hasProjects: projects.length > 0,
+      projectCount: projects.length,
+      topPercent: top && top.total ? Math.round((top.done / top.total) * 100) : 0,
     });
+  },
+
+  onOpenProjects() {
+    wx.navigateTo({ url: '/pages/projects/index' });
   },
 
   buildPaletteSummary(settings) {
@@ -72,8 +80,4 @@ Page({
     wx.navigateTo({ url: '/pages/palette/index' });
   },
 
-  onResume() {
-    if (!app.globalData.result) return;
-    wx.navigateTo({ url: '/pages/editor/index?resume=1' });
-  },
 });

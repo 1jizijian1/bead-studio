@@ -285,6 +285,31 @@ function countProgress(grid, dims, bm) {
   return { beadTotal, doneTotal, colors: Array.from(byHex.values()) };
 }
 
+/**
+ * 和 countProgress 同口径，但直接吃 `cells`（Uint16）而不是网格对象数组。
+ * 进度页持有的是 cells —— 每次点击都重建 N*M 个对象太浪费。
+ * @returns {{beadTotal, doneTotal, colorTotal:Int32Array, colorDone:Int32Array}}
+ */
+function countProgressFromCells(hexes, cells, bm) {
+  const colorTotal = new Int32Array(hexes.length);
+  const colorDone = new Int32Array(hexes.length);
+  let beadTotal = 0;
+  let doneTotal = 0;
+
+  for (let k = 0; k < cells.length; k++) {
+    const idx = cells[k];
+    if (idx === EXTERNAL_INDEX || idx >= hexes.length) continue;
+    colorTotal[idx]++;
+    beadTotal++;
+    if (getBit(bm, k)) {
+      colorDone[idx]++;
+      doneTotal++;
+    }
+  }
+
+  return { beadTotal, doneTotal, colorTotal, colorDone };
+}
+
 // ---------------- 对账 ----------------
 
 /**
@@ -337,5 +362,6 @@ module.exports = {
   unpackThumb,
   hashGrid,
   countProgress,
+  countProgressFromCells,
   reconcileProgress,
 };

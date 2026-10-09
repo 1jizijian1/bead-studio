@@ -1,0 +1,135 @@
+.page {
+  padding: 24rpx;
+}
+
+/* ---------- 容量条 ---------- */
+.usage {
+  font-size: 22rpx;
+  color: #9ca3af;
+  padding: 0 8rpx 16rpx;
+}
+
+.usage-warn {
+  color: #d97706;
+}
+
+/* ---------- 列表项 ---------- */
+.item {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+.thumb {
+  width: 160rpx;
+  height: 96rpx;
+  border-radius: 12rpx;
+  background: #f3f4f6;
+  flex-shrink: 0;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.row-top {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+}
+
+.name {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1f2937;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+.dims {
+  font-size: 20rpx;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.bar {
+  height: 10rpx;
+  background: #e5e7eb;
+  border-radius: 5rpx;
+  overflow: hidden;
+  margin: 14rpx 0 12rpx;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #10b981);
+  border-radius: 5rpx;
+}
+
+.row-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.progress {
+  font-size: 22rpx;
+  color: #6b7280;
+}
+
+.finished {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.time {
+  font-size: 20rpx;
+  color: #d1d5db;
+}
+
+.del {
+  flex-shrink: 0;
+  font-size: 24rpx;
+  color: #9ca3af;
+  padding: 12rpx 8rpx 12rpx 16rpx;
+}
+
+/* ---------- 空态 ---------- */
+.empty {
+  padding-top: 200rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.empty-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.empty-desc {
+  margin-top: 20rpx;
+  font-size: 24rpx;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.7;
+}
+
+.empty-btn {
+  margin-top: 48rpx;
+  padding: 24rpx 56rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 600;
+}

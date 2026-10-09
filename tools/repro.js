@@ -22,6 +22,11 @@ const THRESHOLD = parseFloat(process.argv[3] || '8');
 const MODE = process.argv[4] || 'dominant';
 const MIN_REGION = parseInt(process.argv[5] || '0', 10);
 
+if (!fs.existsSync(SRC)) {
+  console.error(`找不到源图：${SRC}`);
+  console.error("用环境变量指定一张图，例如：SRC=D:/test.png node.exe tools/repro.js");
+  process.exit(1);
+}
 const img = png.decode(fs.readFileSync(SRC));
 console.log(`原图 ${img.width}x${img.height}`);
 

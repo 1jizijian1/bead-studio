@@ -180,6 +180,11 @@ const N = defaultN;
 const THRESHOLD = parseFloat(process.argv[3] || String(constants.DEFAULT_THRESHOLD));
 const MIN_REGION = parseInt(process.argv[4] || String(constants.DEFAULT_MIN_REGION), 10);
 
+if (!fs.existsSync(SRC)) {
+  console.error(`找不到源图：${SRC}`);
+  console.error('用环境变量指定一张图，例如：SRC=D:/test.png node.exe tools/render-export.js');
+  process.exit(1);
+}
 const img = png.decode(fs.readFileSync(SRC));
 const maxEdge = 1600;
 const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));

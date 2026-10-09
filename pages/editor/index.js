@@ -12,6 +12,8 @@ const { despeckle } = require('../../utils/cleanup');
 const size = require('../../utils/size');
 const gridCanvas = require('../../utils/gridCanvas');
 const exportPattern = require('../../utils/exportPattern');
+const projectStore = require('../../utils/projectStore');
+const codec = require('../../utils/projectCodec');
 
 const app = getApp();
 
@@ -67,7 +69,6 @@ Page({
     const settings = store.getSettings();
     const picked = store.getPickedImage();
     this.src = options.src ? decodeURIComponent(options.src) : picked && picked.path;
-    this.resume = options.resume === '1';
 
     // 图片宽高比：把「横轴格子数」换算成「纵向格子数」，用于尺寸预估
     this.aspect = picked && picked.width ? picked.height / picked.width : 1;
@@ -80,6 +81,10 @@ Page({
     this.initialGridColorKeys = new Set();
     this.bgSnapshot = null;
     this.sample = null;
+    // 本次编辑会话对应的项目 id。
+    // ⚠️ 调参 / 去背景 / 排除色**都不清空它** —— 由 cellsHash 决定是「复用」还是
+    // 「覆盖并重置进度」。这样反复拖滑块再进拼豆模式不会攒出一堆孤儿项目。
+    this.currentProjectId = null;
 
     // 视图变换（缩放/平移），不改画布元素尺寸，只改内部的 transform
     this.view = { scale: 1, tx: 0, ty: 0 };
@@ -577,6 +582,88 @@ Page({
     this.renderStats();
     this.redraw();
     wx.showToast({ title: `已排除，重映射 ${res.remappedCount} 格`, icon: 'none' });
+  },
+
+  // ---------- 拼豆进度 ----------
+
+  /**
+   * 进入拼豆进度模式。
+   *
+   * 项目是**生成那一刻的快照**：之后在编辑器里改参数不影响已经建好的项目。
+   * 同一个会话里改完再进来，靠 cellsHash 判断「复用旧项目」还是「覆盖重置进度」，
+   * 避免拖几次滑块就攒出一堆孤儿项目。
+   */
+  async onStartProgress() {
+    if (!this.grid || this.busy) return;
+    const settings = store.getSettings();
+    const packed = codec.packGrid(this.grid, this.dims);
+    const hash = codec.hashGrid(packed.hexes, packed.cells);
+
+    let id = this.currentProjectId;
+
+    if (id && !projectStore.getProjectMeta(id)) {
+      id = null; // 项目被删掉了，当新的建
+      this.currentProjectId = null;
+    }
+
+    if (id) {
+      if (projectStore.getCellsHash(id) !== hash) {
+        const meta = projectStore.getProjectMeta(id);
+        if (meta && meta.done > 0) {
+          const ok = await new Promise((resolve) => {
+            wx.showModal({
+              title: '图纸改动了',
+              content: '这张图纸的拼豆进度会被重置，图纸本身也会换成现在这版。继续吗？',
+              confirmText: '继续',
+              success: (m) => resolve(m.confirm),
+              fail: () => resolve(false),
+            });
+          });
+          if (!ok) return;
+        }
+        const res = projectStore.overwrite(id, {
+          grid: this.grid,
+          dims: this.dims,
+          colorSystem: settings.colorSystem,
+          settings,
+        });
+        if (!res.ok) return this.warnSave(res.reason);
+      }
+    } else {
+      const now = new Date();
+      const res = projectStore.createFromGrid({
+        grid: this.grid,
+        dims: this.dims,
+        colorSystem: settings.colorSystem,
+        settings,
+        name: `${this.dims.N}×${this.dims.M} · ${now.getMonth() + 1}月${now.getDate()}日`,
+        thumb: codec.makeThumb(this.grid, this.dims, 32, 18),
+      });
+      if (!res.ok) return this.warnSave(res.reason);
+      id = res.id;
+      this.currentProjectId = id;
+    }
+
+    wx.navigateTo({ url: `/pages/craft/index?id=${id}` });
+  },
+
+  warnSave(reason) {
+    const texts = {
+      too_many: ['项目太多了', '最多存 12 个拼豆项目。先删掉几个不再拼的，再开新的。', '去管理'],
+      too_big: ['图纸太大', '这张图纸的进度存不下。把成品宽度调小一些再试。', '知道了'],
+      quota: ['存储空间不足', '进度没能保存。可以删掉不再拼的项目腾出空间。', '去管理'],
+    };
+    const t = texts[reason] || texts.quota;
+    wx.showModal({
+      title: t[0],
+      content: t[1],
+      confirmText: t[2],
+      success: (m) => {
+        if (m.confirm && reason !== 'too_big') {
+          wx.navigateTo({ url: '/pages/projects/index' });
+        }
+      },
+    });
   },
 
   // ---------- 导出 ----------

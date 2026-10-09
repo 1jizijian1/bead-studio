@@ -2,7 +2,9 @@
   "pages": [
     "pages/index/index",
     "pages/editor/index",
-    "pages/palette/index"
+    "pages/palette/index",
+    "pages/craft/index",
+    "pages/projects/index"
   ],
   "window": {
     "navigationBarBackgroundColor": "#1F2937",

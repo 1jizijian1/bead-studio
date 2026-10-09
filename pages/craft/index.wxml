@@ -1,0 +1,74 @@
+<view class="page" wx:if="{{ready}}">
+  <!-- 顶栏 -->
+  <view class="topbar">
+    <view class="back" bindtap="onBack">‹ 返回</view>
+    <view class="title">{{name}}</view>
+    <view class="reset" bindtap="onReset">重置</view>
+  </view>
+
+  <!-- 总进度 -->
+  <view class="overall">
+    <view class="overall-bar">
+      <view class="overall-fill" style="width:{{progressPercent}}%"></view>
+    </view>
+    <view class="overall-text">
+      <text class="pct">{{progressPercent}}%</text>
+      <text class="cnt">{{doneText}} 颗</text>
+    </view>
+  </view>
+
+  <!-- 当前色 + 工具 -->
+  <view class="toolbar">
+    <view class="cur">
+      <view class="cur-swatch" style="background:{{currentSwatch}}"></view>
+      <view class="cur-meta">
+        <text class="cur-label">正在拼</text>
+        <text class="cur-key">{{currentKey}}</text>
+      </view>
+    </view>
+    <view class="tools">
+      <view class="tool {{focusOnly ? 'tool-on' : ''}}" bindtap="onToggleFocus">只看当前色</view>
+      <view class="tool {{undoCount ? '' : 'tool-dim'}}" bindtap="onUndo">
+        撤销<text wx:if="{{undoCount}}"> {{undoCount}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 画布 -->
+  <view class="canvas-wrap">
+    <canvas
+      type="2d"
+      id="pattern"
+      class="pattern"
+      style="width:{{canvasW}}px;height:{{canvasH}}px;"
+      bindtouchstart="onTouchStart"
+      catchtouchmove="onTouchMove"
+      bindtouchend="onTouchEnd"
+      bindtouchcancel="onTouchEnd"
+    ></canvas>
+
+    <view class="zoom-badge" wx:if="{{zoom > 1.01}}" bindtap="onResetZoom">{{zoom}}× · 复位</view>
+    <view class="save-warn" wx:if="{{saveError}}">⚠︎ 未保存</view>
+  </view>
+
+  <view class="hint">点格子标记 · 长按标记整块 · 双指缩放</view>
+
+  <!-- 色号列表 -->
+  <scroll-view class="strip" scroll-x enhanced show-scrollbar="{{false}}">
+    <view
+      class="chip {{item.isCurrent ? 'chip-cur' : ''}} {{item.isDone ? 'chip-done' : ''}}"
+      wx:for="{{colorList}}" wx:key="idx"
+      data-idx="{{item.idx}}" bindtap="onColorTap"
+    >
+      <view class="chip-swatch" style="background:{{item.hex}}">
+        <view class="chip-check" wx:if="{{item.isDone}}">✓</view>
+      </view>
+      <view class="chip-key">{{item.key}}</view>
+      <view class="chip-num">{{item.done}}/{{item.total}}</view>
+    </view>
+  </scroll-view>
+</view>
+
+<view class="loading" wx:else>
+  <text>加载中…</text>
+</view>

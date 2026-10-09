@@ -83,6 +83,22 @@ function sortColorKeys(a, b) {
   return a.localeCompare(b);
 }
 
+/**
+ * 两个 hex 之间线性插值，t=0 取 a、t=1 取 b。
+ * 进度页用它预计算「灰掉的颜色」「已完成变暗的颜色」——
+ * 预计算成字符串后，渲染时每格只是查表，不用做任何颜色运算。
+ */
+function mixHex(a, b, t) {
+  const pa = hexToRgb(a);
+  const pb = hexToRgb(b);
+  if (!pa || !pb) return a;
+  const r = Math.round(pa.r + (pb.r - pa.r) * t);
+  const g = Math.round(pa.g + (pb.g - pa.g) * t);
+  const bl = Math.round(pa.b + (pb.b - pa.b) * t);
+  const to2 = (v) => (v < 16 ? '0' : '') + v.toString(16);
+  return ('#' + to2(r) + to2(g) + to2(bl)).toUpperCase();
+}
+
 /** 把调色板整体转到某个色号体系（key 变成色号）。仅用于展示，算法里用不到。 */
 function convertPaletteToColorSystem(palette, colorSystem) {
   return palette.map((c) => {
@@ -104,4 +120,5 @@ module.exports = {
   convertColorKeyToHex,
   convertPaletteToColorSystem,
   sortColorKeys,
+  mixHex,
 };

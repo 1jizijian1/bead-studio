@@ -305,6 +305,11 @@
   box-shadow: 0 8rpx 28rpx rgba(99, 102, 241, 0.3);
 }
 
+.btn.block {
+  margin-top: 20rpx;
+  width: 100%;
+}
+
 /* 导出画布：不能 display:none，否则导不出来；移出可视区即可 */
 .export-canvas {
   position: fixed;

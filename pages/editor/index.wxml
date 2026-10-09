@@ -167,6 +167,11 @@
     <view class="btn primary" bindtap="onExport">导出图纸</view>
   </view>
 
+  <!-- 拼豆进度模式：出图纸之后的下一步 -->
+  <view class="btn primary block" bindtap="onStartProgress">
+    开始拼豆 · 对着手机一颗颗拼
+  </view>
+
   <!-- 隐藏的导出画布：canvasToTempFilePath 只认页面里的真实 canvas 节点 -->
   <canvas type="2d" id="export" class="export-canvas" style="width:{{exportCssW}}px;height:{{exportCssH}}px;"></canvas>
 </view>
