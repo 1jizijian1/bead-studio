@@ -17,8 +17,9 @@ const OUT_PNG = 'C:/Users/727/Desktop/小程序/bead-studio/tools/repro-result.p
 
 // 命令行参数：N、阈值、模式
 const N = parseInt(process.argv[2] || '100', 10);
-const THRESHOLD = parseFloat(process.argv[3] || '30');
+const THRESHOLD = parseFloat(process.argv[3] || '8');
 const MODE = process.argv[4] || 'dominant';
+const MIN_REGION = parseInt(process.argv[5] || '0', 10);
 
 const img = png.decode(fs.readFileSync(SRC));
 console.log(`原图 ${img.width}x${img.height}`);
@@ -54,6 +55,12 @@ const grid = px.calculatePixelGrid(imageData, sw, sh, N, M, mapper, MODE);
 console.log(`合并前颜色数：${Object.keys(computeStats(grid.data, grid.dims).colorCounts).length}`);
 
 globalMerge(grid.data, grid.dims, mapper.palette, THRESHOLD);
+
+if (MIN_REGION > 1) {
+  const { despeckle } = require('../utils/cleanup');
+  const r = despeckle(grid.data, grid.dims, MIN_REGION);
+  console.log(`杂色清理(最小色块 ${MIN_REGION})：改 ${r.cellsChanged} 格，清掉 ${r.regionsRemoved} 个小块`);
+}
 
 const stats = computeStats(grid.data, grid.dims);
 console.log(`合并后颜色数：${Object.keys(stats.colorCounts).length}，总格 ${stats.totalBeadCount}`);

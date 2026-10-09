@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS = {
   colorSystem: constants.DEFAULT_COLOR_SYSTEM,
   granularity: constants.DEFAULT_GRANULARITY,
   threshold: constants.DEFAULT_THRESHOLD,
+  minRegion: constants.DEFAULT_MIN_REGION,
   mode: constants.DEFAULT_MODE,
   /** hex -> boolean，自定义色板勾选；缺省表示全选 */
   paletteSelections: null,

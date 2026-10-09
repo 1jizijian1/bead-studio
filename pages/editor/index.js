@@ -8,6 +8,7 @@ const { globalMerge } = require('../../utils/merge');
 const { computeStats, cloneGrid, sortedColorStats } = require('../../utils/stats');
 const { removeBackground } = require('../../utils/background');
 const { excludeColor } = require('../../utils/exclude');
+const { despeckle } = require('../../utils/cleanup');
 const exportPattern = require('../../utils/exportPattern');
 
 const app = getApp();
@@ -27,6 +28,14 @@ Page({
     threshold: constants.DEFAULT_THRESHOLD,
     thresholdMin: constants.THRESHOLD_MIN,
     thresholdMax: constants.THRESHOLD_MAX,
+
+    minRegion: constants.DEFAULT_MIN_REGION,
+    minRegionMin: constants.MIN_REGION_MIN,
+    minRegionMax: constants.MIN_REGION_MAX,
+    speckleText: '',
+
+    zoom: 1,
+    zoomText: '1.0×',
 
     modes: constants.MODES,
     mode: constants.DEFAULT_MODE,
@@ -61,10 +70,16 @@ Page({
     this.bgSnapshot = null;
     this.sample = null;
 
+    // 视图变换（缩放/平移），不改画布元素尺寸，只改内部的 transform
+    this.view = { scale: 1, tx: 0, ty: 0 };
+    this.touch = null;
+
     const mode = constants.MODES.find((m) => m.value === settings.mode) || constants.MODES[0];
     this.setData({
       granularity: settings.granularity,
       threshold: settings.threshold,
+      minRegion: settings.minRegion,
+      speckleText: this.speckleLabel(settings.minRegion),
       mode: settings.mode,
       modeDesc: mode.desc,
       colorSystem: settings.colorSystem,
@@ -168,6 +183,12 @@ Page({
 
       globalMerge(grid.data, grid.dims, mapper.palette, settings.threshold);
 
+      // 杂色清理：按空间连通性把小碎块并进周围主导色。
+      // 原仓库 README 描述过这一步但代码里没有，是让图纸「不脏」的关键。
+      this.setData({ busyText: '正在清理杂色…' });
+      await new Promise((r) => setTimeout(r, 0));
+      despeckle(grid.data, grid.dims, settings.minRegion);
+
       this.mapper = mapper;
       this.activePalette = mapper.palette;
       this.grid = grid.data;
@@ -226,22 +247,37 @@ Page({
 
   redraw() {
     if (!this.display || !this.grid) return;
-    const { ctx, cssW, cssH } = this.display;
+    const { ctx, cssW, cssH, dpr } = this.display;
     const N = this.dims.N;
     const M = this.dims.M;
+    const view = this.view;
 
-    ctx.clearRect(0, 0, cssW, cssH);
+    // 每次重绘都从单位矩阵开始，自己叠 dpr 和视图变换（别依赖 initDisplayCanvas 里那一次 scale）
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cssW * dpr, cssH * dpr);
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, cssW, cssH);
+    ctx.fillRect(0, 0, cssW * dpr, cssH * dpr);
+
+    ctx.scale(dpr, dpr);
+    ctx.translate(view.tx, view.ty);
+    ctx.scale(view.scale, view.scale);
 
     const cw = cssW / N;
     const ch = cssH / M;
 
+    // 只画可见范围内的格子：放大后能省掉绝大部分绘制
+    const left = -view.tx / view.scale;
+    const top = -view.ty / view.scale;
+    const i0 = Math.max(0, Math.floor(left / cw));
+    const i1 = Math.min(N - 1, Math.ceil((left + cssW / view.scale) / cw));
+    const j0 = Math.max(0, Math.floor(top / ch));
+    const j1 = Math.min(M - 1, Math.ceil((top + cssH / view.scale) / ch));
+
     // 按颜色批量绘制：fillStyle 只切几次，而不是每格一次
     const byColor = new Map();
-    for (let j = 0; j < M; j++) {
+    for (let j = j0; j <= j1; j++) {
       const row = this.grid[j];
-      for (let i = 0; i < N; i++) {
+      for (let i = i0; i <= i1; i++) {
         const cell = row[i];
         const color = cell.isExternal ? constants.EXTERNAL_CELL_COLOR : cell.color;
         let arr = byColor.get(color);
@@ -253,50 +289,140 @@ Page({
       }
     }
 
+    // 补一点点宽度防止缩放后出现缝隙；随放大倍数缩小补偿量
+    const bleed = 0.5 / view.scale;
     byColor.forEach((coords, color) => {
       ctx.fillStyle = color;
       for (let t = 0; t < coords.length; t += 2) {
-        // +0.5 防止缩放后出现缝隙
-        ctx.fillRect(coords[t] * cw, coords[t + 1] * ch, cw + 0.5, ch + 0.5);
+        ctx.fillRect(coords[t] * cw, coords[t + 1] * ch, cw + bleed, ch + bleed);
       }
     });
 
-    // 格子太小时不画网格线，否则整片糊成灰的
-    if (cw >= 4 && ch >= 4) {
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.14)';
-      ctx.lineWidth = 0.5;
+    // 屏幕上每格不足 4px 就不画网格线，否则整片糊成灰的
+    if (cw * view.scale >= 4) {
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.16)';
+      ctx.lineWidth = 0.6 / view.scale;
       ctx.beginPath();
-      for (let i = 1; i < N; i++) {
-        const x = Math.round(i * cw) + 0.25;
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, cssH);
+      for (let i = i0; i <= i1 + 1; i++) {
+        const x = i * cw;
+        ctx.moveTo(x, j0 * ch);
+        ctx.lineTo(x, (j1 + 1) * ch);
       }
-      for (let j = 1; j < M; j++) {
-        const y = Math.round(j * ch) + 0.25;
-        ctx.moveTo(0, y);
-        ctx.lineTo(cssW, y);
+      for (let j = j0; j <= j1 + 1; j++) {
+        const y = j * ch;
+        ctx.moveTo(i0 * cw, y);
+        ctx.lineTo((i1 + 1) * cw, y);
       }
       ctx.stroke();
     }
 
     // 外框
     ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0.5, 0.5, cssW - 1, cssH - 1);
+    ctx.lineWidth = 1 / view.scale;
+    ctx.strokeRect(0, 0, cssW, cssH);
+  },
+
+  // ---------- 缩放 / 平移 ----------
+
+  clampView() {
+    const { cssW, cssH } = this.display;
+    const s = this.view.scale;
+    const minTx = cssW - cssW * s;
+    const minTy = cssH - cssH * s;
+    this.view.tx = Math.min(0, Math.max(minTx, this.view.tx));
+    this.view.ty = Math.min(0, Math.max(minTy, this.view.ty));
+  },
+
+  onTouchStart(e) {
+    const touches = e.touches || [];
+    this.moved = false;
+    if (touches.length === 1) {
+      this.touch = {
+        mode: 'pan',
+        x: touches[0].x,
+        y: touches[0].y,
+        tx: this.view.tx,
+        ty: this.view.ty,
+      };
+    } else if (touches.length >= 2) {
+      const a = touches[0];
+      const b = touches[1];
+      this.touch = {
+        mode: 'pinch',
+        dist: Math.hypot(b.x - a.x, b.y - a.y),
+        cx: (a.x + b.x) / 2,
+        cy: (a.y + b.y) / 2,
+        scale: this.view.scale,
+        tx: this.view.tx,
+        ty: this.view.ty,
+      };
+      this.moved = true;
+    }
+  },
+
+  onTouchMove(e) {
+    const t = this.touch;
+    const touches = e.touches || [];
+    if (!t || !this.display) return;
+
+    if (t.mode === 'pan' && touches.length === 1) {
+      const dx = touches[0].x - t.x;
+      const dy = touches[0].y - t.y;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) this.moved = true;
+      this.view.tx = t.tx + dx;
+      this.view.ty = t.ty + dy;
+      this.clampView();
+      this.redraw();
+    } else if (t.mode === 'pinch' && touches.length >= 2) {
+      const a = touches[0];
+      const b = touches[1];
+      const dist = Math.hypot(b.x - a.x, b.y - a.y);
+      if (t.dist < 1) return;
+      const next = Math.max(1, Math.min(12, (t.scale * dist) / t.dist));
+      // 以两指中点为锚点：该点在内容坐标系里的位置保持不变
+      const gx = (t.cx - t.tx) / t.scale;
+      const gy = (t.cy - t.ty) / t.scale;
+      this.view.scale = next;
+      this.view.tx = t.cx - gx * next;
+      this.view.ty = t.cy - gy * next;
+      this.clampView();
+      this.redraw();
+    }
+  },
+
+  onTouchEnd() {
+    this.touch = null;
+    if (!this.display) return;
+    const s = this.view.scale;
+    if (Math.abs(this.data.zoom - s) > 0.001) {
+      this.setData({ zoom: s, zoomText: s.toFixed(1) + '×' });
+    }
+  },
+
+  onResetZoom() {
+    this.view = { scale: 1, tx: 0, ty: 0 };
+    this.setData({ zoom: 1, zoomText: '1.0×' });
+    this.redraw();
   },
 
   onCanvasTap(e) {
     if (!this.grid || !this.display) return;
+    if (this.moved) return; // 刚才是在拖动/缩放，不算点击
     const detail = e.detail || {};
     const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
     // bindtap 的 e.detail.x/y 已经是相对 canvas 的 CSS px，不要再乘 dpr
-    const x = typeof detail.x === 'number' ? detail.x : touch ? touch.x : NaN;
-    const y = typeof detail.y === 'number' ? detail.y : touch ? touch.y : NaN;
-    if (isNaN(x) || isNaN(y)) return;
+    const sx = typeof detail.x === 'number' ? detail.x : touch ? touch.x : NaN;
+    const sy = typeof detail.y === 'number' ? detail.y : touch ? touch.y : NaN;
+    if (isNaN(sx) || isNaN(sy)) return;
 
     const { cssW, cssH } = this.display;
-    const i = Math.floor(x / (cssW / this.dims.N));
-    const j = Math.floor(y / (cssH / this.dims.M));
+    const view = this.view;
+    // 屏幕坐标 -> 内容坐标（逆变换）
+    const gx = (sx - view.tx) / view.scale;
+    const gy = (sy - view.ty) / view.scale;
+
+    const i = Math.floor(gx / (cssW / this.dims.N));
+    const j = Math.floor(gy / (cssH / this.dims.M));
     if (i < 0 || i >= this.dims.N || j < 0 || j >= this.dims.M) return;
 
     const cell = this.grid[j][i];
@@ -335,6 +461,22 @@ Page({
     const threshold = e.detail.value;
     this.setData({ threshold });
     store.updateSettings({ threshold });
+    this.generate();
+  },
+
+  speckleLabel(v) {
+    return v <= 1 ? '不清理（保留所有小碎块）' : `小于 ${v} 格的碎块会并入周围颜色`;
+  },
+
+  onMinRegionChanging(e) {
+    const minRegion = e.detail.value;
+    this.setData({ minRegion, speckleText: this.speckleLabel(minRegion) });
+  },
+
+  onMinRegionChange(e) {
+    const minRegion = e.detail.value;
+    this.setData({ minRegion, speckleText: this.speckleLabel(minRegion) });
+    store.updateSettings({ minRegion });
     this.generate();
   },
 

@@ -7,7 +7,17 @@
       class="preview"
       style="width:{{previewW}}px;height:{{previewH}}px;"
       bindtap="onCanvasTap"
+      bindtouchstart="onTouchStart"
+      catchtouchmove="onTouchMove"
+      bindtouchend="onTouchEnd"
+      bindtouchcancel="onTouchEnd"
     ></canvas>
+
+    <view class="zoom-badge" wx:if="{{zoom > 1.01}}" bindtap="onResetZoom">
+      {{zoomText}} · 点此复位
+    </view>
+
+    <view class="zoom-hint" wx:if="{{zoom <= 1.01}}">双指放大看细节 · 拖动平移</view>
 
     <view class="busy" wx:if="{{busy}}">
       <view class="busy-bar">
@@ -81,6 +91,19 @@
         bindchanging="onThresholdChanging" bindchange="onThresholdChange"
       />
       <view class="param-hint">把相近的色号合并成一个。0 = 完全不合并；照片建议 5~12，扁平色块的卡通图可以调更高</view>
+    </view>
+
+    <view class="param">
+      <view class="param-head">
+        <text class="param-name">杂色清理</text>
+        <text class="param-value">{{minRegion}}</text>
+      </view>
+      <slider
+        min="{{minRegionMin}}" max="{{minRegionMax}}" value="{{minRegion}}"
+        block-size="22" activeColor="#10b981" backgroundColor="#e5e7eb"
+        bindchanging="onMinRegionChanging" bindchange="onMinRegionChange"
+      />
+      <view class="param-hint">{{speckleText}}</view>
     </view>
 
     <view class="param">

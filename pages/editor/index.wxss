@@ -19,6 +19,28 @@
   display: block;
 }
 
+.zoom-badge {
+  position: absolute;
+  right: 20rpx;
+  bottom: 20rpx;
+  padding: 10rpx 20rpx;
+  border-radius: 999rpx;
+  background: rgba(31, 41, 55, 0.85);
+  color: #ffffff;
+  font-size: 22rpx;
+}
+
+.zoom-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 20rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
 .busy {
   position: absolute;
   left: 0;

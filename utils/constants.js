@@ -27,6 +27,15 @@ module.exports = {
   THRESHOLD_MAX: 40,
   DEFAULT_THRESHOLD: 8,
 
+  /**
+   * 杂色清理：小于这个格数的连通色块会被并入周围的主导色。
+   * 1 = 不清理。默认 2 能去掉绝大多数孤立杂点，又不会糊掉细节
+   * （实测 8 会把瀑布、建筑细节抹平，太狠）。
+   */
+  MIN_REGION_MIN: 1,
+  MIN_REGION_MAX: 12,
+  DEFAULT_MIN_REGION: 2,
+
   MODES: [
     { value: 'dominant', label: '卡通', desc: '取色块主导色，边缘干净' },
     { value: 'average', label: '真实', desc: '取区域内均值，保留渐变' },
@@ -70,6 +79,7 @@ module.exports = {
   /** 格子过小时的下限，低于它就提示用户 */
   EXPORT_CELL_SIZE_MIN: 6,
 
+  /** 杂色清理的默认值随设置版本一起变，见 store.js */
   TRANSPARENT_KEY: 'ERASE',
   /** 预览里外部背景格的填充色（对齐网页版 PixelatedPreviewCanvas） */
   EXTERNAL_CELL_COLOR: '#F3F4F6',

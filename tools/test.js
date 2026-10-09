@@ -204,6 +204,80 @@ ok('阈值 0 时不合并任何颜色', () => {
   assert.strictEqual(mergedCount, 0);
 });
 
+console.log('\n[cleanup 杂色清理]');
+const { despeckle } = require('../utils/cleanup');
+const cellOf = (hex) => ({ key: hex, color: hex });
+
+function makeSolidField(N, M, hex) {
+  const g = [];
+  for (let j = 0; j < M; j++) {
+    const row = [];
+    for (let i = 0; i < N; i++) row.push(cellOf(hex));
+    g.push(row);
+  }
+  return g;
+}
+
+ok('孤立单格被并入周围颜色', () => {
+  const dims = { N: 5, M: 5 };
+  const g = makeSolidField(5, 5, '#AAAAAA');
+  g[2][2] = cellOf('#BBBBBB'); // 正中间一个孤点
+  const r = despeckle(g, dims, 2);
+  assert.strictEqual(g[2][2].color, '#AAAAAA', '孤点应被并入');
+  assert.strictEqual(r.cellsChanged, 1);
+  assert.strictEqual(r.regionsRemoved, 1);
+});
+
+ok('够大的色块保留不动', () => {
+  const dims = { N: 5, M: 5 };
+  const g = makeSolidField(5, 5, '#AAAAAA');
+  // 2x2 的块（4 格），阈值 2 时不该被动
+  g[1][1] = cellOf('#BBBBBB');
+  g[1][2] = cellOf('#BBBBBB');
+  g[2][1] = cellOf('#BBBBBB');
+  g[2][2] = cellOf('#BBBBBB');
+  const r = despeckle(g, dims, 2);
+  assert.strictEqual(r.cellsChanged, 0, '2x2 的块不该被清掉');
+  assert.strictEqual(g[1][1].color, '#BBBBBB');
+});
+
+ok('阈值调高时 2x2 也会被并入', () => {
+  const dims = { N: 5, M: 5 };
+  const g = makeSolidField(5, 5, '#AAAAAA');
+  g[1][1] = cellOf('#BBBBBB');
+  g[1][2] = cellOf('#BBBBBB');
+  g[2][1] = cellOf('#BBBBBB');
+  g[2][2] = cellOf('#BBBBBB');
+  const r = despeckle(g, dims, 5);
+  assert.strictEqual(r.cellsChanged, 4);
+  assert.strictEqual(g[1][1].color, '#AAAAAA');
+});
+
+ok('minSize <= 1 时不做任何事', () => {
+  const dims = { N: 3, M: 3 };
+  const g = makeSolidField(3, 3, '#AAAAAA');
+  g[1][1] = cellOf('#BBBBBB');
+  const before = JSON.stringify(g);
+  const r = despeckle(g, dims, 1);
+  assert.strictEqual(r.cellsChanged, 0);
+  assert.strictEqual(JSON.stringify(g), before);
+});
+
+ok('外部（空白）格不会被当成邻居颜色，也不会被改', () => {
+  const dims = { N: 5, M: 5 };
+  const g = makeSolidField(5, 5, '#AAAAAA');
+  // 中间一列挖成外部
+  for (let j = 0; j < 5; j++) {
+    g[j][2] = { key: 'ERASE', color: '#FFFFFF', isExternal: true };
+  }
+  // 右侧放一个孤点，四周只有左边是 #AAAAAA
+  g[2][3] = cellOf('#BBBBBB');
+  const r = despeckle(g, dims, 2);
+  assert.strictEqual(g[2][3].color, '#AAAAAA', '应并入左侧的 A');
+  assert.strictEqual(g[0][2].isExternal, true, '外部格不能被改动');
+  assert.strictEqual(r.cellsChanged, 1);
+});
+
 console.log('\n[background]');
 ok('白边红心 -> 白背景被移除', () => {
   const img = makeImage(8, 8, (x, y) => {

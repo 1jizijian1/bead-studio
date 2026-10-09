@@ -11,3 +11,6 @@ Thumbs.db
 # 诊断脚本跑出来的临时图片（可随时重新生成）
 tools/repro-*.png
 tools/*-result.png
+tools/ds-*.png
+tools/final.png
+tools/color-check.js
