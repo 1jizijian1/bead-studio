@@ -13,4 +13,3 @@ tools/repro-*.png
 tools/*-result.png
 tools/ds-*.png
 tools/final.png
-tools/color-check.js
