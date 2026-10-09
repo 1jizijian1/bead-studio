@@ -20,8 +20,9 @@ const { planExport, drawPattern } = require('../utils/exportPattern');
 
 const DIR =
   'C:/Users/727/xwechat_files/wxid_8snr5v7j6xs112_dec4/temp/RWTemp/2026-10/9e20f478899dc29eb19741386f9343c8/';
-const SRC = DIR + 'd789f7974f002f7ba462d18cfa3365fa.png';
-const OUT_PNG = 'C:/Users/727/Desktop/小程序/bead-studio/tools/export-preview.png';
+// 默认跑那张游戏截图；换图只要给环境变量 SRC 一个路径
+const SRC = process.env.SRC || DIR + 'd789f7974f002f7ba462d18cfa3365fa.png';
+const OUT_PNG = process.env.OUT || 'C:/Users/727/Desktop/小程序/bead-studio/tools/export-preview.png';
 
 // ---------- Canvas2D 软渲染 shim ----------
 function createCtx2D(w, h) {
@@ -173,7 +174,9 @@ function createCtx2D(w, h) {
 }
 
 // ---------- 跑流程 ----------
-const N = parseInt(process.argv[2] || '100', 10);
+// 默认对齐 App 的出厂设置：成品宽 30cm + 5mm 标准豆 -> 60 格
+const defaultN = parseInt(process.argv[2] || '60', 10);
+const N = defaultN;
 const THRESHOLD = parseFloat(process.argv[3] || String(constants.DEFAULT_THRESHOLD));
 const MIN_REGION = parseInt(process.argv[4] || String(constants.DEFAULT_MIN_REGION), 10);
 

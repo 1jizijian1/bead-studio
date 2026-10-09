@@ -12,8 +12,9 @@ const { computeStats } = require('../utils/stats');
 
 const DIR =
   'C:/Users/727/xwechat_files/wxid_8snr5v7j6xs112_dec4/temp/RWTemp/2026-10/9e20f478899dc29eb19741386f9343c8/';
-const SRC = DIR + 'd789f7974f002f7ba462d18cfa3365fa.png';
-const OUT_PNG = 'C:/Users/727/Desktop/小程序/bead-studio/tools/repro-result.png';
+// 默认跑那张游戏截图；换图只要给环境变量 SRC 一个路径
+const SRC = process.env.SRC || DIR + 'd789f7974f002f7ba462d18cfa3365fa.png';
+const OUT_PNG = process.env.OUT || 'C:/Users/727/Desktop/小程序/bead-studio/tools/repro-result.png';
 
 // 命令行参数：N、阈值、模式
 const N = parseInt(process.argv[2] || '100', 10);
