@@ -123,6 +123,23 @@ ok('关闭坐标轴和清单后图纸变小', () => {
   assert.ok(without.h < withAll.h, '关清单后高度应该变小');
 });
 
+ok('漏传 colorCount 时仍为清单区预留高度（回归）', () => {
+  // editor 曾经漏传 colorCount，导致清单高度算成 0 却仍要绘制 -> 清单被画到画布外
+  const noStats = planExport(
+    { N: 40, M: 40 },
+    Object.assign({}, options, { includeStats: false }),
+    constants.MAX_EXPORT_EDGE,
+    10
+  );
+  const withStatsOmittedCount = planExport({ N: 40, M: 40 }, options, constants.MAX_EXPORT_EDGE);
+  const withOne = planExport({ N: 40, M: 40 }, options, constants.MAX_EXPORT_EDGE, 1);
+  assert.ok(
+    withStatsOmittedCount.h > noStats.h,
+    `开了清单却没预留高度：${withStatsOmittedCount.h} vs 无清单 ${noStats.h}`
+  );
+  assert.strictEqual(withStatsOmittedCount.h, withOne.h, '漏传 colorCount 应与传 1 等价（兜底成 1 行）');
+});
+
 console.log('\n[drawPattern 不越界]');
 
 const CASES = [

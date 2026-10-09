@@ -436,7 +436,13 @@ Page({
       return;
     }
     const settings = store.getSettings();
-    const plan = exportPattern.planExport(this.dims, settings.downloadOptions, constants.MAX_EXPORT_EDGE);
+    const colorCount = Object.keys(this.stats.colorCounts).length;
+    const plan = exportPattern.planExport(
+      this.dims,
+      settings.downloadOptions,
+      constants.MAX_EXPORT_EDGE,
+      colorCount
+    );
 
     if (plan.tooSmall) {
       const modal = await new Promise((resolve) => {

@@ -51,11 +51,14 @@ function computeLayout(dims, options, cell, colorCount, colsOverride) {
   let statsRows = 0;
   let itemWidth = 0;
   let statsHeight = 0;
-  if (includeStats && colorCount > 0) {
+  if (includeStats) {
+    // 调用方漏传 colorCount 时兜底成 1，否则清单区高度会算成 0，
+    // 但 includeStats 仍是 true，绘制时就会把清单画到画布外面去
+    const count = colorCount > 0 ? colorCount : 1;
     const availableStatsWidth = w - STATS_PADDING * 2;
     statsCols = colsOverride || Math.max(1, Math.min(4, Math.floor(availableStatsWidth / 250)));
     itemWidth = Math.floor(availableStatsWidth / statsCols);
-    statsRows = Math.ceil(colorCount / statsCols);
+    statsRows = Math.ceil(count / statsCols);
     statsHeight =
       STATS_TOP_MARGIN + STATS_TITLE_HEIGHT + statsRows * STATS_ROW_HEIGHT + STATS_FOOTER_HEIGHT + STATS_PADDING;
   }
