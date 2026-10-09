@@ -1,0 +1,21 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/editor/index",
+    "pages/palette/index"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#1F2937",
+    "navigationBarTitleText": "拼豆图纸生成",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#F7F7F8"
+  },
+  "permission": {
+    "scope.writePhotosAlbum": {
+      "desc": "用于把生成的拼豆图纸保存到你的相册"
+    }
+  },
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "style": "v2"
+}

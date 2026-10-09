@@ -1,0 +1,49 @@
+<view class="page">
+  <!-- 色号体系 -->
+  <view class="card">
+    <view class="card-title">店家色号体系</view>
+    <view class="card-hint">切换后，全站的色号显示都会跟着变（颜色本身不变）</view>
+    <scroll-view scroll-x enhanced show-scrollbar="{{false}}">
+      <view class="segmented nowrap">
+        <view
+          class="seg {{colorSystem === item ? 'seg-on' : ''}}"
+          wx:for="{{colorSystems}}" wx:key="*this"
+          data-system="{{item}}" bindtap="onColorSystemChange"
+        >{{item}}</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 色板 -->
+  <view class="card">
+    <view class="card-head">
+      <view class="card-title">我的色板</view>
+      <view class="count">已选 {{selectedCount}} / {{total}}</view>
+    </view>
+    <view class="card-hint">只勾选你手上有的颜色，生成的图纸就只会用到这些色号</view>
+
+    <view class="quick">
+      <view class="quick-btn" bindtap="onSelectAll">全选</view>
+      <view class="quick-btn" bindtap="onSelectNone">全不选</view>
+      <view class="quick-btn" bindtap="onInvert">反选</view>
+    </view>
+
+    <view class="grid">
+      <view
+        class="cell {{item.selected ? '' : 'cell-off'}}"
+        wx:for="{{colors}}" wx:key="hex"
+        data-index="{{index}}"
+        bindtap="onToggle"
+      >
+        <view class="cell-swatch" style="background:{{item.hex}};">
+          <view class="cell-check" wx:if="{{item.selected}}">✓</view>
+        </view>
+        <view class="cell-key">{{item.key}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer-actions">
+    <view class="btn primary" bindtap="onSave">保存</view>
+  </view>
+</view>

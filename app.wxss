@@ -1,0 +1,28 @@
+page {
+  background: #f7f7f8;
+  color: #1f2937;
+  font-size: 28rpx;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, sans-serif;
+  box-sizing: border-box;
+}
+
+view,
+text,
+canvas,
+button,
+scroll-view {
+  box-sizing: border-box;
+}
+
+/* 统一按钮外观，去掉微信默认的边框和背景 */
+button {
+  padding: 0;
+  margin: 0;
+  line-height: normal;
+  font-size: inherit;
+  background: transparent;
+}
+
+button::after {
+  border: none;
+}

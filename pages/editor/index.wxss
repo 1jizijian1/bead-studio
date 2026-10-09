@@ -1,0 +1,266 @@
+.page {
+  padding: 24rpx 24rpx 200rpx;
+}
+
+/* ---------- 画布 ---------- */
+.canvas-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400rpx;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 16rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+
+.preview {
+  display: block;
+}
+
+.busy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.86);
+  border-radius: 20rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24rpx;
+}
+
+.busy-bar {
+  width: 300rpx;
+  height: 8rpx;
+  background: #e5e7eb;
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.busy-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 4rpx;
+  transition: width 0.12s linear;
+}
+
+.busy-text {
+  font-size: 26rpx;
+  color: #6b7280;
+}
+
+/* ---------- 点格子提示 ---------- */
+.tip {
+  margin-top: 20rpx;
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  background: #1f2937;
+  color: #ffffff;
+  border-radius: 16rpx;
+  padding: 20rpx 24rpx;
+}
+
+.tip-swatch {
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 10rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.4);
+}
+
+.tip-key {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+
+.tip-hex {
+  font-size: 24rpx;
+  opacity: 0.6;
+  flex: 1;
+}
+
+.tip-close {
+  font-size: 40rpx;
+  opacity: 0.6;
+  padding: 0 8rpx;
+}
+
+/* ---------- 概览 ---------- */
+.info-bar {
+  margin-top: 24rpx;
+  display: flex;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 28rpx 0;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+
+.info-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.info-value {
+  font-size: 38rpx;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.info-label {
+  font-size: 22rpx;
+  color: #9ca3af;
+}
+
+/* ---------- 颜色清单 ---------- */
+.color-strip {
+  margin-top: 24rpx;
+  white-space: nowrap;
+}
+
+.chip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  margin-right: 16rpx;
+  padding: 14rpx 18rpx;
+  background: #ffffff;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+
+.chip-off {
+  opacity: 0.35;
+}
+
+.chip-swatch {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 10rpx;
+  border: 2rpx solid rgba(0, 0, 0, 0.08);
+}
+
+.chip-key {
+  font-size: 22rpx;
+  color: #374151;
+  font-weight: 600;
+}
+
+.chip-count {
+  font-size: 20rpx;
+  color: #9ca3af;
+}
+
+/* ---------- 参数面板 ---------- */
+.panel {
+  margin-top: 24rpx;
+  background: #ffffff;
+  border-radius: 20rpx;
+  padding: 8rpx 28rpx 28rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+}
+
+.param {
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f3f4f6;
+}
+
+.param:last-child {
+  border-bottom: none;
+  padding-bottom: 8rpx;
+}
+
+.param-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8rpx;
+}
+
+.param-name {
+  font-size: 28rpx;
+  color: #374151;
+}
+
+.param-value {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #6366f1;
+}
+
+.param-hint {
+  font-size: 22rpx;
+  color: #9ca3af;
+  margin-top: 8rpx;
+  line-height: 1.5;
+}
+
+.segmented {
+  display: flex;
+  gap: 12rpx;
+  margin-top: 8rpx;
+}
+
+.segmented.nowrap {
+  display: inline-flex;
+  white-space: nowrap;
+}
+
+.seg {
+  padding: 14rpx 28rpx;
+  border-radius: 14rpx;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 26rpx;
+}
+
+.seg-on {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* ---------- 操作 ---------- */
+.actions {
+  margin-top: 32rpx;
+  display: flex;
+  gap: 20rpx;
+}
+
+.btn {
+  flex: 1;
+  text-align: center;
+  padding: 28rpx 0;
+  border-radius: 18rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.btn.ghost {
+  background: #ffffff;
+  color: #374151;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  box-shadow: 0 8rpx 28rpx rgba(99, 102, 241, 0.3);
+}
+
+/* 导出画布：不能 display:none，否则导不出来；移出可视区即可 */
+.export-canvas {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+}

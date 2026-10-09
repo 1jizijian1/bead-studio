@@ -1,0 +1,125 @@
+<view class="page">
+  <!-- 画布 -->
+  <view class="canvas-wrap">
+    <canvas
+      type="2d"
+      id="preview"
+      class="preview"
+      style="width:{{previewW}}px;height:{{previewH}}px;"
+      bindtap="onCanvasTap"
+    ></canvas>
+
+    <view class="busy" wx:if="{{busy}}">
+      <view class="busy-bar">
+        <view class="busy-fill" style="width:{{progressPercent}}%"></view>
+      </view>
+      <view class="busy-text">{{busyText}}</view>
+    </view>
+  </view>
+
+  <!-- 点格子提示 -->
+  <view class="tip" wx:if="{{tip}}">
+    <view class="tip-swatch" style="background:{{tip.color}};"></view>
+    <text class="tip-key">{{tip.isExternal ? '空白' : tip.key}}</text>
+    <text class="tip-hex">{{tip.isExternal ? '' : tip.color}}</text>
+    <text class="tip-close" bindtap="onCloseTip">×</text>
+  </view>
+
+  <!-- 概览 -->
+  <view class="info-bar">
+    <view class="info-item">
+      <text class="info-value">{{dims.N}}×{{dims.M}}</text>
+      <text class="info-label">格子</text>
+    </view>
+    <view class="info-item">
+      <text class="info-value">{{colorList.length}}</text>
+      <text class="info-label">颜色</text>
+    </view>
+    <view class="info-item">
+      <text class="info-value">{{totalBeadCount}}</text>
+      <text class="info-label">总豆数</text>
+    </view>
+  </view>
+
+  <!-- 颜色清单（点一下可排除） -->
+  <scroll-view class="color-strip" scroll-x wx:if="{{colorList.length}}" enhanced show-scrollbar="{{false}}">
+    <view
+      class="chip {{item.excluded ? 'chip-off' : ''}}"
+      wx:for="{{colorList}}"
+      wx:key="hex"
+      data-hex="{{item.hex}}"
+      bindtap="onToggleColor"
+    >
+      <view class="chip-swatch" style="background:{{item.color}};"></view>
+      <view class="chip-key">{{item.key}}</view>
+      <view class="chip-count">{{item.count}}</view>
+    </view>
+  </scroll-view>
+
+  <!-- 参数面板 -->
+  <view class="panel">
+    <view class="param">
+      <view class="param-head">
+        <text class="param-name">横轴格子数</text>
+        <text class="param-value">{{granularity}}</text>
+      </view>
+      <slider
+        min="{{granularityMin}}" max="{{granularityMax}}" value="{{granularity}}"
+        block-size="22" activeColor="#6366f1" backgroundColor="#e5e7eb"
+        bindchanging="onGranularityChanging" bindchange="onGranularityChange"
+      />
+    </view>
+
+    <view class="param">
+      <view class="param-head">
+        <text class="param-name">颜色合并阈值</text>
+        <text class="param-value">{{threshold}}</text>
+      </view>
+      <slider
+        min="{{thresholdMin}}" max="{{thresholdMax}}" value="{{threshold}}"
+        block-size="22" activeColor="#8b5cf6" backgroundColor="#e5e7eb"
+        bindchanging="onThresholdChanging" bindchange="onThresholdChange"
+      />
+      <view class="param-hint">调高可以合并相近颜色、去杂色；调到 0 则不合并</view>
+    </view>
+
+    <view class="param">
+      <view class="param-head">
+        <text class="param-name">像素化模式</text>
+      </view>
+      <view class="segmented">
+        <view
+          class="seg {{mode === item.value ? 'seg-on' : ''}}"
+          wx:for="{{modes}}" wx:key="value"
+          data-mode="{{item.value}}" bindtap="onModeChange"
+        >{{item.label}}</view>
+      </view>
+      <view class="param-hint">{{modeDesc}}</view>
+    </view>
+
+    <view class="param">
+      <view class="param-head">
+        <text class="param-name">店家色号体系</text>
+      </view>
+      <scroll-view scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="segmented nowrap">
+          <view
+            class="seg {{colorSystem === item ? 'seg-on' : ''}}"
+            wx:for="{{colorSystems}}" wx:key="*this"
+            data-system="{{item}}" bindtap="onColorSystemChange"
+          >{{item}}</view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 操作 -->
+  <view class="actions">
+    <view class="btn ghost" bindtap="onRemoveBackground">一键去背景</view>
+    <view class="btn ghost" bindtap="onUndoBackground">撤销</view>
+    <view class="btn primary" bindtap="onExport">导出图纸</view>
+  </view>
+
+  <!-- 隐藏的导出画布：canvasToTempFilePath 只认页面里的真实 canvas 节点 -->
+  <canvas type="2d" id="export" class="export-canvas" style="width:{{exportCssW}}px;height:{{exportCssH}}px;"></canvas>
+</view>

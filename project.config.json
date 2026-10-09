@@ -1,0 +1,22 @@
+{
+  "description": "拼豆图纸生成器（微信小程序版）",
+  "projectname": "bead-studio",
+  "appid": "touristappid",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "./",
+  "libVersion": "3.5.0",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": false,
+    "urlCheck": false,
+    "checkInvalidKey": true,
+    "ignoreUploadUnusedFiles": true,
+    "coverView": true,
+    "lazyloadPlaceholderEnable": false,
+    "skylineRenderEnable": false,
+    "useCompilerPlugins": false
+  },
+  "condition": {}
+}

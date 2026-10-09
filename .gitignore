@@ -1,0 +1,9 @@
+# 微信开发者工具的本地私有配置
+project.private.config.json
+.idea/
+.vscode/
+node_modules/
+
+# 系统垃圾
+.DS_Store
+Thumbs.db

@@ -1,0 +1,50 @@
+<view class="page">
+  <!-- 品牌区 -->
+  <view class="brand">
+    <view class="bead-logo">
+      <view class="bead-row">
+        <view class="bead bead-1"></view>
+        <view class="bead bead-2"></view>
+        <view class="bead bead-3"></view>
+      </view>
+      <view class="bead-row">
+        <view class="bead bead-4"></view>
+        <view class="bead bead-5"></view>
+        <view class="bead bead-6"></view>
+      </view>
+      <view class="bead-row">
+        <view class="bead bead-7"></view>
+        <view class="bead bead-8"></view>
+        <view class="bead bead-9"></view>
+      </view>
+    </view>
+    <view class="brand-title">拼豆图纸生成器</view>
+    <view class="brand-sub">任意图片 → 拼豆底稿，一键生成</view>
+  </view>
+
+  <!-- 主入口 -->
+  <view class="actions">
+    <view class="pick-card" bindtap="onPickImage" hover-class="pick-card-hover">
+      <view class="pick-plus">＋</view>
+      <view class="pick-title">选择图片 / 拍照</view>
+      <view class="pick-desc">支持 JPG / PNG / GIF</view>
+    </view>
+
+    <view class="pick-card secondary" bindtap="onOpenPalette" hover-class="pick-card-hover">
+      <view class="pick-title small">色板设置</view>
+      <view class="pick-desc">
+        <text wx:if="{{paletteSummary}}">{{paletteSummary}}</text>
+        <text wx:else>当前：{{colorSystem}} 全色板</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 继续上次 -->
+  <view class="resume" wx:if="{{hasResult}}" bindtap="onResume">
+    继续编辑上次的图纸（{{lastGridText}}）
+  </view>
+
+  <view class="footer">
+    <text>算法开源于 perler-beads，本版为微信小程序移植</text>
+  </view>
+</view>
