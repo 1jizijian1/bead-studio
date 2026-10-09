@@ -589,20 +589,23 @@ Page({
     if (plan.tooSmall) {
       const modal = await new Promise((resolve) => {
         wx.showModal({
-          title: '格子太密',
-          content: `图纸尺寸 ${this.dims.N}×${this.dims.M} 较大，格内色号会很小不易辨认。建议调低格子数，或关闭「格内色号」。仍要导出吗？`,
+          title: '格子比较密',
+          content: `图纸 ${this.dims.N}×${this.dims.M}，格内色号会比较小、不易辨认。建议降低格子数，或关闭「格内色号」。仍要导出吗？`,
           confirmText: '仍要导出',
           success: resolve,
+          fail: () => resolve({ confirm: false }),
         });
       });
       if (!modal.confirm) return;
     }
 
     this.setData({ busy: true, busyText: '正在绘制图纸…', progressPercent: 100 });
-    // 先把导出画布的 CSS 尺寸撑出来，让节点参与布局
-    this.setData({ exportCssW: Math.min(plan.w, 300), exportCssH: Math.min(plan.h, 300) });
+    // 显示尺寸设成和输出一致（元素在屏幕外，不影响观感），
+    // 避免「元素尺寸 ≠ backing store」在某些机型上出问题
+    this.setData({ exportCssW: plan.w, exportCssH: plan.h });
     await new Promise((r) => setTimeout(r, 60));
 
+    let filePath;
     try {
       const { canvas, ctx } = await canvasHelper.initExportCanvas('#export', this, plan.w, plan.h);
       exportPattern.drawPattern(ctx, {
@@ -614,38 +617,35 @@ Page({
         totalBeadCount: this.stats.totalBeadCount,
         plan,
       });
-
-      const filePath = await canvasHelper.exportCanvasToFile(canvas, plan.w, plan.h, this);
+      filePath = await canvasHelper.exportCanvasToFile(canvas, plan.w, plan.h, this);
       this.setData({ busy: false });
-
-      wx.previewImage({
-        urls: [filePath],
-        success: () => {
-          // 预览页可长按保存，这里再给一个显式保存入口
-        },
-      });
-
-      const action = await new Promise((resolve) => {
-        wx.showActionSheet({
-          itemList: ['保存到相册', '分享给好友'],
-          success: (r) => resolve(r.tapIndex),
-          fail: () => resolve(-1),
-        });
-      });
-
-      if (action === 0) {
-        await canvasHelper.saveToAlbum(filePath);
-      } else if (action === 1) {
-        if (wx.showShareImageMenu) {
-          wx.showShareImageMenu({ path: filePath });
-        } else {
-          wx.showToast({ title: '当前微信版本不支持分享图片', icon: 'none' });
-        }
-      }
     } catch (e) {
       console.error(e);
       this.setData({ busy: false });
       wx.showToast({ title: e.message || '导出失败', icon: 'none' });
+      return;
+    }
+
+    // 先让用户选做什么，再执行 —— 之前在 previewImage 之后再弹 actionSheet，
+    // 两个弹层会打架
+    const action = await new Promise((resolve) => {
+      wx.showActionSheet({
+        itemList: ['保存到相册', '预览大图', '分享给好友'],
+        success: (r) => resolve(r.tapIndex),
+        fail: () => resolve(-1),
+      });
+    });
+
+    if (action === 0) {
+      await canvasHelper.saveToAlbum(filePath);
+    } else if (action === 1) {
+      wx.previewImage({ urls: [filePath] });
+    } else if (action === 2) {
+      if (wx.showShareImageMenu) {
+        wx.showShareImageMenu({ path: filePath });
+      } else {
+        wx.showToast({ title: '当前微信版本不支持分享图片', icon: 'none' });
+      }
     }
   },
 });

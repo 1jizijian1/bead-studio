@@ -11,7 +11,7 @@
  */
 const constants = require('./constants');
 const { getDisplayColorKey, sortColorKeys } = require('./palette');
-const { roundRect, getContrastColor } = require('./canvasHelper');
+const { getContrastColor } = require('./canvasHelper');
 
 const TITLE_BAR_HEIGHT = 80;
 const AXIS_LABEL_SIZE = 30;
