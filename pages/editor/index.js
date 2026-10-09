@@ -10,6 +10,7 @@ const { removeBackground } = require('../../utils/background');
 const { excludeColor } = require('../../utils/exclude');
 const { despeckle } = require('../../utils/cleanup');
 const size = require('../../utils/size');
+const gridCanvas = require('../../utils/gridCanvas');
 const exportPattern = require('../../utils/exportPattern');
 
 const app = getApp();
@@ -111,14 +112,13 @@ Page({
     const img = store.getPickedImage();
     const aspect = img && img.width ? img.height / img.width : 1;
     const info = canvasHelper.getWindowInfo();
-    const availW = info.windowWidth - 24;
-    const availH = Math.round(info.windowHeight * 0.52);
-    let w = availW;
-    let h = Math.round(w * aspect);
-    if (h > availH) {
-      h = availH;
-      w = Math.round(h / aspect);
-    }
+    const box = gridCanvas.fitBox(
+      info.windowWidth - 24,
+      Math.round(info.windowHeight * 0.52),
+      aspect
+    );
+    const w = box.w;
+    const h = box.h;
 
     await new Promise((resolve) => this.setData({ previewW: w, previewH: h }, resolve));
 
@@ -299,89 +299,31 @@ Page({
   redraw() {
     if (!this.display || !this.grid) return;
     const { ctx, cssW, cssH, dpr } = this.display;
-    const N = this.dims.N;
-    const M = this.dims.M;
-    const view = this.view;
+    const grid = this.grid;
 
-    // 每次重绘都从单位矩阵开始，自己叠 dpr 和视图变换（别依赖 initDisplayCanvas 里那一次 scale）
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, cssW * dpr, cssH * dpr);
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, cssW * dpr, cssH * dpr);
-
-    ctx.scale(dpr, dpr);
-    ctx.translate(view.tx, view.ty);
-    ctx.scale(view.scale, view.scale);
-
-    const cw = cssW / N;
-    const ch = cssH / M;
-
-    // 只画可见范围内的格子：放大后能省掉绝大部分绘制
-    const left = -view.tx / view.scale;
-    const top = -view.ty / view.scale;
-    const i0 = Math.max(0, Math.floor(left / cw));
-    const i1 = Math.min(N - 1, Math.ceil((left + cssW / view.scale) / cw));
-    const j0 = Math.max(0, Math.floor(top / ch));
-    const j1 = Math.min(M - 1, Math.ceil((top + cssH / view.scale) / ch));
-
-    // 按颜色批量绘制：fillStyle 只切几次，而不是每格一次
-    const byColor = new Map();
-    for (let j = j0; j <= j1; j++) {
-      const row = this.grid[j];
-      for (let i = i0; i <= i1; i++) {
-        const cell = row[i];
-        const color = cell.isExternal ? constants.EXTERNAL_CELL_COLOR : cell.color;
-        let arr = byColor.get(color);
-        if (!arr) {
-          arr = [];
-          byColor.set(color, arr);
-        }
-        arr.push(i, j);
-      }
-    }
-
-    // 补一点点宽度防止缩放后出现缝隙；随放大倍数缩小补偿量
-    const bleed = 0.5 / view.scale;
-    byColor.forEach((coords, color) => {
-      ctx.fillStyle = color;
-      for (let t = 0; t < coords.length; t += 2) {
-        ctx.fillRect(coords[t] * cw, coords[t + 1] * ch, cw + bleed, ch + bleed);
-      }
+    // 绘制内核与拼豆进度页共用（utils/gridCanvas.js）。
+    // 抽取时用 tools/render-grid.js 的假 ctx 做过逐调用比对，行为与原来的内联实现一致。
+    gridCanvas.draw(ctx, {
+      cssW,
+      cssH,
+      dpr,
+      dims: this.dims,
+      view: this.view,
+      bg: '#ffffff',
+      getColor: (i, j) => {
+        const cell = grid[j][i];
+        return cell.isExternal ? constants.EXTERNAL_CELL_COLOR : cell.color;
+      },
+      gridLines: { color: 'rgba(0, 0, 0, 0.16)', width: 0.6, minCellPx: 4 },
+      border: { color: 'rgba(0, 0, 0, 0.35)', width: 1 },
     });
-
-    // 屏幕上每格不足 4px 就不画网格线，否则整片糊成灰的
-    if (cw * view.scale >= 4) {
-      ctx.strokeStyle = 'rgba(0, 0, 0, 0.16)';
-      ctx.lineWidth = 0.6 / view.scale;
-      ctx.beginPath();
-      for (let i = i0; i <= i1 + 1; i++) {
-        const x = i * cw;
-        ctx.moveTo(x, j0 * ch);
-        ctx.lineTo(x, (j1 + 1) * ch);
-      }
-      for (let j = j0; j <= j1 + 1; j++) {
-        const y = j * ch;
-        ctx.moveTo(i0 * cw, y);
-        ctx.lineTo((i1 + 1) * cw, y);
-      }
-      ctx.stroke();
-    }
-
-    // 外框
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.35)';
-    ctx.lineWidth = 1 / view.scale;
-    ctx.strokeRect(0, 0, cssW, cssH);
   },
 
   // ---------- 缩放 / 平移 ----------
 
   clampView() {
     const { cssW, cssH } = this.display;
-    const s = this.view.scale;
-    const minTx = cssW - cssW * s;
-    const minTy = cssH - cssH * s;
-    this.view.tx = Math.min(0, Math.max(minTx, this.view.tx));
-    this.view.ty = Math.min(0, Math.max(minTy, this.view.ty));
+    gridCanvas.clampView(this.view, cssW, cssH);
   },
 
   onTouchStart(e) {
@@ -432,14 +374,18 @@ Page({
       const b = touches[1];
       const dist = Math.hypot(b.x - a.x, b.y - a.y);
       if (t.dist < 1) return;
-      const next = Math.max(1, Math.min(12, (t.scale * dist) / t.dist));
       // 以两指中点为锚点：该点在内容坐标系里的位置保持不变
-      const gx = (t.cx - t.tx) / t.scale;
-      const gy = (t.cy - t.ty) / t.scale;
-      this.view.scale = next;
-      this.view.tx = t.cx - gx * next;
-      this.view.ty = t.cy - gy * next;
-      this.clampView();
+      // （锚点要基于「手势开始时的变换」算，所以把 t 里的初值传进去）
+      const { cssW, cssH } = this.display;
+      gridCanvas.zoomTo(
+        this.view,
+        t.cx,
+        t.cy,
+        { scale: t.scale, tx: t.tx, ty: t.ty },
+        (t.scale * dist) / t.dist,
+        cssW,
+        cssH
+      );
       this.redraw();
     }
   },
@@ -470,14 +416,10 @@ Page({
     if (isNaN(sx) || isNaN(sy)) return;
 
     const { cssW, cssH } = this.display;
-    const view = this.view;
-    // 屏幕坐标 -> 内容坐标（逆变换）
-    const gx = (sx - view.tx) / view.scale;
-    const gy = (sy - view.ty) / view.scale;
-
-    const i = Math.floor(gx / (cssW / this.dims.N));
-    const j = Math.floor(gy / (cssH / this.dims.M));
-    if (i < 0 || i >= this.dims.N || j < 0 || j >= this.dims.M) return;
+    const hit = gridCanvas.screenToCell(sx, sy, this.view, cssW, cssH, this.dims);
+    if (!hit.inside) return;
+    const i = hit.i;
+    const j = hit.j;
 
     const cell = this.grid[j][i];
     const settings = store.getSettings();
