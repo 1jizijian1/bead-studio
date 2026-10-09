@@ -11,7 +11,16 @@ const constants = require('./constants');
 
 const SETTINGS_KEY = 'beadSettings';
 
+/**
+ * 设置结构版本。改了默认值语义就要 +1，让老用户的旧值被丢弃、重新取默认。
+ *
+ * v2：颜色合并阈值默认值从 30 改成 8（30 会把照片合并成一团近黑，见 constants.js 的说明）。
+ *     老用户存过 30，不迁移的话改了默认也没用。
+ */
+const SETTINGS_VERSION = 2;
+
 const DEFAULT_SETTINGS = {
+  version: SETTINGS_VERSION,
   colorSystem: constants.DEFAULT_COLOR_SYSTEM,
   granularity: constants.DEFAULT_GRANULARITY,
   threshold: constants.DEFAULT_THRESHOLD,
@@ -28,6 +37,16 @@ function loadSettings() {
   } catch (e) {
     console.warn('读取设置失败', e);
   }
+
+  if (saved && saved.version !== SETTINGS_VERSION) {
+    // 参数默认值变过：只保留与语义无关的用户选择（色号体系、自定义色板、导出选项）
+    saved = {
+      paletteSelections: saved.paletteSelections,
+      colorSystem: saved.colorSystem,
+      downloadOptions: saved.downloadOptions,
+    };
+  }
+
   const merged = Object.assign({}, DEFAULT_SETTINGS, saved || {});
   merged.downloadOptions = Object.assign(
     {},

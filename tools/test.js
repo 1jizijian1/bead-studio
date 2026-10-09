@@ -75,6 +75,45 @@ ok('sortColorKeys：先字母后数字', () => {
   assert.deepStrictEqual(list, ['A1', 'A2', 'A10', 'B2', 'ZG1']);
 });
 
+console.log('\n[阈值默认值校准]');
+// 这是踩过的坑：网页版默认阈值 30 在 ×100 的 Oklab 尺度上太激进，
+// 会把照片合并成一团近黑。这组断言把「可用区间」钉死，防止再改回去。
+ok('默认阈值落在色板相邻间距和「可辨颜色差」之间', () => {
+  const { withOklab } = require('../utils/nearest');
+  const { oklabDistance } = require('../utils/oklab');
+  const constants = require('../utils/constants');
+  const pal = withOklab(palette.buildFullPalette());
+  const byHex = {};
+  pal.forEach((p) => (byHex[p.hex] = p));
+
+  // 每个色到最近邻色的距离，取中位数 = 色板的典型相邻间距
+  const nn = pal.map((p, i) => {
+    let best = Infinity;
+    pal.forEach((q, j) => {
+      if (i !== j) best = Math.min(best, oklabDistance(p._oklab, q._oklab));
+    });
+    return best;
+  });
+  nn.sort((a, b) => a - b);
+  const medianGap = nn[Math.floor(nn.length / 2)];
+
+  assert.ok(
+    constants.DEFAULT_THRESHOLD > medianGap,
+    `默认阈值 ${constants.DEFAULT_THRESHOLD} 应大于色板相邻间距中位数 ${medianGap.toFixed(2)}，否则起不到去杂色作用`
+  );
+
+  // 人眼明确可辨的两种颜色不该被默认阈值合并
+  const distinct = oklabDistance(byHex['#5D722A']._oklab, byHex['#8D614C']._oklab); // 绿 vs 棕
+  assert.ok(
+    constants.DEFAULT_THRESHOLD < distinct,
+    `默认阈值 ${constants.DEFAULT_THRESHOLD} 必须小于「绿 vs 棕」的距离 ${distinct.toFixed(1)}，否则会把绿植并进棕色`
+  );
+  assert.ok(
+    constants.DEFAULT_THRESHOLD < 33,
+    '默认阈值必须小于「中棕 vs 深黑」的 33.5，否则整张暗调照片会塌成一个颜色'
+  );
+});
+
 console.log('\n[nearest]');
 ok('最近色映射正确', () => {
   const mapper = createMapper(SMALL_PALETTE);

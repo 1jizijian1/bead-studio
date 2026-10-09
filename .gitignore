@@ -7,3 +7,7 @@ node_modules/
 # 系统垃圾
 .DS_Store
 Thumbs.db
+
+# 诊断脚本跑出来的临时图片（可随时重新生成）
+tools/repro-*.png
+tools/*-result.png

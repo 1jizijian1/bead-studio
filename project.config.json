@@ -1,7 +1,7 @@
 {
   "description": "拼豆图纸生成器（微信小程序版）",
   "projectname": "bead-studio",
-  "appid": "touristappid",
+  "appid": "wx99e5b33d503072dc",
   "compileType": "miniprogram",
   "miniprogramRoot": "./",
   "libVersion": "3.5.0",
@@ -16,7 +16,28 @@
     "coverView": true,
     "lazyloadPlaceholderEnable": false,
     "skylineRenderEnable": false,
-    "useCompilerPlugins": false
+    "useCompilerPlugins": false,
+    "compileWorklet": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "packNpmManually": false,
+    "packNpmRelationList": [],
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "condition": false,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
   },
-  "condition": {}
+  "condition": {},
+  "simulatorPluginLibVersion": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "editorSetting": {}
 }

@@ -80,7 +80,7 @@
         block-size="22" activeColor="#8b5cf6" backgroundColor="#e5e7eb"
         bindchanging="onThresholdChanging" bindchange="onThresholdChange"
       />
-      <view class="param-hint">调高可以合并相近颜色、去杂色；调到 0 则不合并</view>
+      <view class="param-hint">把相近的色号合并成一个。0 = 完全不合并；照片建议 5~12，扁平色块的卡通图可以调更高</view>
     </view>
 
     <view class="param">
