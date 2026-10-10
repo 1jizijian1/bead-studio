@@ -5,7 +5,8 @@
     "pages/palette/index",
     "pages/craft/index",
     "pages/projects/index",
-    "pages/checkin/index"
+    "pages/checkin/index",
+    "pages/shared/index"
   ],
   "window": {
     "navigationBarBackgroundColor": "#1F2937",

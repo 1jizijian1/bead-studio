@@ -3,6 +3,7 @@ const codec = require('../../utils/projectCodec');
 const canvasHelper = require('../../utils/canvasHelper');
 const gridImage = require('../../utils/gridImage');
 const cardImage = require('../../utils/cardImage');
+const cloud = require('../../utils/cloud');
 
 const BLANK_COLOR = '#FFFFFF';
 
@@ -17,6 +18,8 @@ Page({
     statsText: '',
     cardSrc: '',
     hasPhoto: false,
+    /** 云开发配好了才显示「分享图纸给好友」 */
+    cloudReady: false,
     /** 隐藏画布的 CSS 尺寸 */
     tw: 1,
     th: 1,
@@ -49,6 +52,7 @@ Page({
       name: p.name,
       statsText: `${p.dims.N}×${p.dims.M} · ${this.beadTotal} 颗 · ${this.colorCount} 色`,
       hasPhoto: !!this.coverPath,
+      cloudReady: cloud.isReady(),
     });
 
     await this.render();
@@ -193,6 +197,53 @@ Page({
       wx.previewImage({ urls: [this.data.cardSrc] });
       wx.showToast({ title: '长按图片可转发给好友', icon: 'none', duration: 2000 });
     }
+  },
+
+  // ---------- 分享「图纸」（好友点开能自己拼） ----------
+
+  /**
+   * `open-type="share"` 的按钮和右上角菜单都会走这里。
+   * 返回 Promise 是支持的 —— 第一次分享时先异步把图纸传上云再给卡片。
+   */
+  onShareAppMessage() {
+    const title = `我用 ${this.beadTotal} 颗豆子拼了「${this.p ? this.p.name : '一张图'}」，点开可以自己拼`;
+    const img = this.data.cardSrc || '';
+
+    if (this.shareId) {
+      return { title, path: `/pages/shared/index?id=${this.shareId}`, imageUrl: img };
+    }
+
+    return this.uploadForShare().then((id) => ({
+      title,
+      // 上传失败就退回到首页，别给好友一个打不开的链接
+      path: id ? `/pages/shared/index?id=${id}` : '/pages/index/index',
+      imageUrl: img,
+    }));
+  },
+
+  /** 把图纸传上云（只传一次，之后复用 id） */
+  async uploadForShare() {
+    if (this.shareId) return this.shareId;
+    if (!cloud.isReady()) return null;
+
+    wx.showLoading({ title: '准备分享…', mask: true });
+    const res = await cloud.uploadPattern({
+      name: this.p.name,
+      dims: this.dims,
+      colorSystem: this.p.colorSystem,
+      hexes: this.hexes,
+      cellsB64: codec.packCells(this.cells),
+      beadTotal: this.beadTotal,
+    });
+    wx.hideLoading();
+
+    if (!res.ok) {
+      const msg = res.reason === 'too_big' ? '图纸太大，传不上云' : '上传失败，请重试';
+      wx.showToast({ title: msg, icon: 'none' });
+      return null;
+    }
+    this.shareId = res.id;
+    return res.id;
   },
 
   onBack() {

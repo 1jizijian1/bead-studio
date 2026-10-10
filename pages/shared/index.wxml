@@ -1,0 +1,30 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="center">加载中…</view>
+
+  <view wx:elif="{{error}}" class="center">
+    <view class="err-title">看不了这张图纸</view>
+    <view class="err-desc">{{error}}</view>
+    <view class="err-btn" bindtap="onBack">返回首页</view>
+  </view>
+
+  <block wx:else>
+    <view class="head">
+      <view class="tag">好友分享的图纸</view>
+      <view class="name">{{name}}</view>
+      <view class="stats">{{statsText}}</view>
+    </view>
+
+    <view class="preview">
+      <image wx:if="{{previewSrc}}" class="preview-img" src="{{previewSrc}}" mode="widthFix" />
+    </view>
+
+    <view class="btn primary" bindtap="onSave">
+      {{saving ? '保存中…' : (saved ? '已保存，正在打开…' : '存进我的拼豆，开始拼')}}
+    </view>
+
+    <view class="tip">存下来之后就能进拼豆进度页 —— 按色号分批拼、进度自动保存。</view>
+  </block>
+
+  <!-- 隐藏渲染画布：只用来出图，不参与显示 -->
+  <canvas type="2d" id="preview" class="hidden-canvas" style="width:{{pw}}px;height:{{ph}}px;"></canvas>
+</view>

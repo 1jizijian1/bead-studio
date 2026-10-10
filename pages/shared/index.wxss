@@ -1,0 +1,110 @@
+.page {
+  padding: 24rpx 24rpx calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.center {
+  padding-top: 240rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #9ca3af;
+  font-size: 28rpx;
+}
+
+.err-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.err-desc {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #9ca3af;
+  text-align: center;
+  line-height: 1.7;
+  padding: 0 60rpx;
+}
+
+.err-btn {
+  margin-top: 48rpx;
+  padding: 22rpx 56rpx;
+  border-radius: 999rpx;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 28rpx;
+}
+
+/* ---------- 头部 ---------- */
+.head {
+  padding: 8rpx 8rpx 24rpx;
+}
+
+.tag {
+  display: inline-block;
+  padding: 6rpx 18rpx;
+  border-radius: 999rpx;
+  background: #eef2ff;
+  color: #4f46e5;
+  font-size: 20rpx;
+}
+
+.name {
+  margin-top: 16rpx;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.stats {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #9ca3af;
+}
+
+/* ---------- 预览 ---------- */
+.preview {
+  border-radius: 20rpx;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+  min-height: 300rpx;
+}
+
+.preview-img {
+  width: 100%;
+  display: block;
+}
+
+/* ---------- 操作 ---------- */
+.btn {
+  margin-top: 32rpx;
+  text-align: center;
+  padding: 30rpx 0;
+  border-radius: 18rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  box-shadow: 0 8rpx 28rpx rgba(99, 102, 241, 0.3);
+}
+
+.tip {
+  margin-top: 24rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
+/* 隐藏渲染画布 */
+.hidden-canvas {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+}

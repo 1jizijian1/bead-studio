@@ -88,6 +88,13 @@
   flex: 1;
 }
 
+/* open-type="share" 的 button 是块级的，宽度要自己给 */
+.share-btn {
+  margin-top: 24rpx;
+  width: 100%;
+  display: block;
+}
+
 .tip {
   margin-top: 24rpx;
   text-align: center;

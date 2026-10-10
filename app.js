@@ -1,4 +1,5 @@
 const store = require('./utils/store');
+const cloud = require('./utils/cloud');
 
 App({
   globalData: {
@@ -13,5 +14,7 @@ App({
   onLaunch() {
     // 用户偏好是小对象，可以安全落 storage
     this.globalData.settings = store.loadSettings();
+    // 云开发：没配 ENV_ID 就直接返回 false，其他功能不受影响
+    cloud.init();
   },
 });

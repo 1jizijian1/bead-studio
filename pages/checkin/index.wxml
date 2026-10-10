@@ -21,10 +21,19 @@
     <view class="btn primary" bindtap="onSaveCard">保存到相册</view>
   </view>
   <view class="actions">
-    <view class="btn ghost full" bindtap="onShareCard">分享给好友</view>
+    <view class="btn ghost full" bindtap="onShareCard">分享打卡图</view>
   </view>
 
-  <view class="tip">加上实拍照片，打卡图会更好看；不加就只展示图纸。</view>
+  <button
+    wx:if="{{cloudReady}}"
+    class="btn primary share-btn"
+    open-type="share"
+  >分享图纸给好友 · 点开能自己拼</button>
+
+  <view class="tip">
+    <text wx:if="{{cloudReady}}">「分享打卡图」发的是图片；「分享图纸」发的是小程序卡片，好友点开就能自己拼。</text>
+    <text wx:else>加上实拍照片，打卡图会更好看。开通云开发后还能把图纸分享给好友拼。</text>
+  </view>
 
   <!-- 隐藏画布：只用来出图，不参与显示 -->
   <canvas type="2d" id="thumb" class="hidden-canvas" style="width:{{tw}}px;height:{{th}}px;"></canvas>
