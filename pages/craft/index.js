@@ -162,18 +162,46 @@ Page({
     this.setData({ ready: true });
     this.redraw();
 
-    // 【临时诊断】1.5 秒后再画一次，并在**右下角**补一个绿方块。
-    //   只看到绿方块+图案 → 首次绘制被随后的页面更新弄丢了（时序问题）
-    //   两个方块都看不到     → 这块画布根本显示不出来（结构问题）
+    // 【临时诊断 + 尝试自修复】
+    // 重新取一次 canvas 节点，和首次取的比对：
+    //   不是同一个对象 → 页面更新把节点换掉了，我们一直在往脱离文档的旧节点上画
+    //   是同一个       → 节点没问题，得换别的思路
+    // 如果是前者，就用新节点重新初始化并重绘 —— 屏幕上应该立刻出现绿方块。
     const self = this;
     setTimeout(function () {
       if (!self.display) return;
-      self.redraw();
-      const c = self.display.ctx;
-      const cv = self.display.canvas;
-      c.setTransform(1, 0, 0, 1, 0, 0);
-      c.fillStyle = '#00FF00';
-      c.fillRect(cv.width - 70, cv.height - 70, 60, 60);
+      wx.createSelectorQuery()
+        .in(self)
+        .select('#pattern')
+        .fields({ node: true, size: true })
+        .exec(function (res) {
+          const info = res && res[0];
+          if (!info || !info.node) {
+            self.setData({ debugProbe: '重取节点失败 · ' + (self.data.debugProbe || '') });
+            return;
+          }
+          const same = info.node === self.display.canvas;
+          const mark = function (d, tag) {
+            self.display = d;
+            self.redraw();
+            const c = d.ctx;
+            const cv = d.canvas;
+            c.setTransform(1, 0, 0, 1, 0, 0);
+            c.fillStyle = '#00FF00';
+            c.fillRect(cv.width - 70, cv.height - 70, 60, 60);
+            self.setData({
+              debugProbe:
+                tag + ' · 尺寸 ' + cv.width + '×' + cv.height + ' · ' + (self.data.debugProbe || ''),
+            });
+          };
+          if (same) {
+            mark(self.display, '节点没变（同一个对象）');
+          } else {
+            canvasHelper.initDisplayCanvas('#pattern', self).then(function (d) {
+              mark(d, '★节点被换过！已用新节点重绘');
+            });
+          }
+        });
     }, 1500);
   },
 
