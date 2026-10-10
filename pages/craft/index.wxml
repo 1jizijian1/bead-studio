@@ -1,4 +1,8 @@
-<view class="page" wx:if="{{ready}}">
+<!-- ⚠️ 不要用 wx:if 把整个页面挡起来再显示。
+     初始为 false 时 canvas 节点是后创建的，实测会出现
+     「getImageData 读得到内容、但屏幕上不显示」的原生层问题。
+     编辑器页的 canvas 一直挂在模板里，就没事。 -->
+<view class="page">
   <!-- 顶栏 -->
   <view class="topbar">
     <view class="back" bindtap="onBack">‹ 返回</view>
@@ -42,6 +46,10 @@
     <view class="zoom-badge" wx:if="{{zoom > 1.01}}" bindtap="onResetZoom">{{zoom}}× · 复位</view>
     <view class="save-warn" wx:if="{{saveError}}">⚠︎ 未保存</view>
     <view class="legend" wx:if="{{singleColor}}">只显示 {{currentKey}}</view>
+
+    <view class="loading-mask" wx:if="{{!ready}}">
+      <text>加载中…</text>
+    </view>
   </view>
 
   <view class="hint">整张 {{progressPercent}}%（{{doneText}} 颗）· 长按标记整块 · 双指缩放</view>
@@ -71,8 +79,4 @@
       <view class="chip-num">{{item.done}}/{{item.total}}</view>
     </view>
   </scroll-view>
-</view>
-
-<view class="loading" wx:else>
-  <text>加载中…</text>
 </view>

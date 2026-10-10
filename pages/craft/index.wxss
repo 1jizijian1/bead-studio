@@ -140,7 +140,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  /* ⚠️ 不要加 overflow: hidden。
+     canvas 在小程序里是**原生层组件**，被容器裁剪时可能出现
+     「内容画上去了（getImageData 能读到）但屏幕上不显示」——
+     编辑器页的容器没有这行，显示正常；进度页加了就白屏。 */
   background: #ffffff;
   border-radius: 16rpx;
   box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
@@ -295,12 +298,18 @@
   color: #9ca3af;
 }
 
-/* ---------- 加载态 ---------- */
-.loading {
-  height: 100vh;
+/* ---------- 加载态（盖在画布上，不用 wx:if 挡整页） ---------- */
+.loading-mask {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.92);
   color: #9ca3af;
-  font-size: 28rpx;
+  font-size: 26rpx;
+  border-radius: 16rpx;
 }
