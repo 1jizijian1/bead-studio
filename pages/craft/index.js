@@ -24,7 +24,11 @@ const MAX_UNDO = 50;
  * 看着就像「没有图片」。现在淡出用浅灰 #e5e7eb、空白格用纯白，两者分得开。
  */
 const FADE_T = 0.62;
-const FADE_STRONG_T = 0.72;
+/**
+ * 0.55 是量出来的：0.72 时淡出来的颜色是 rgb(225,226,225)，
+ * 在白底上肉眼几乎看不出（学员就是因此以为「没有图片」）。
+ */
+const FADE_STRONG_T = 0.55;
 /** 淡出目标：浅灰。**不能等于 BLANK_COLOR** */
 const FADE_STRONG_TARGET = '#e5e7eb';
 const DONE_T = 0.55;
@@ -206,10 +210,25 @@ Page({
     this.colorDone = c.colorDone;
   },
 
+  /**
+   * 默认选中**剩余颗数最多**的色号。
+   *
+   * 不用 `hexes[0]`：那是「编码时第一个遇到的颜色」，纯属任意 ——
+   * 实测抽中一个只有 13 颗（占 0.2%）的色号，单色模式下整张画布
+   * 99.8% 都是淡灰，看着就跟没画一样。
+   * 先拼大色块也符合实际工序。
+   */
   firstUnfinishedColor() {
+    let best = -1;
+    let bestRemain = 0;
     for (let i = 0; i < this.hexes.length; i++) {
-      if (this.colorDone[i] < this.colorTotal[i]) return this.hexes[i];
+      const remain = this.colorTotal[i] - this.colorDone[i];
+      if (remain > bestRemain) {
+        bestRemain = remain;
+        best = i;
+      }
     }
+    if (best >= 0) return this.hexes[best];
     return this.hexes[0] || '';
   },
 
@@ -309,7 +328,9 @@ Page({
         if (idx === curIdx) return solid[idx];
         return focus ? faint[idx] : faded[idx];
       },
-      gridLines: { color: 'rgba(0, 0, 0, 0.14)', width: 0.6, minCellPx: 5 },
+      // minCellPx 放到 3：80x80 的图在手机上每格约 4.4px，原来 5 的门槛导致
+      // 一条网格线都不画，整块画布看着更空
+      gridLines: { color: 'rgba(0, 0, 0, 0.16)', width: 0.6, minCellPx: 3 },
       border: { color: 'rgba(0, 0, 0, 0.3)', width: 1 },
     });
 
