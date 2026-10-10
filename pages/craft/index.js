@@ -66,6 +66,7 @@ Page({
     zoom: 1,
     canvasW: 300,
     canvasH: 300,
+    wrapH: 300,
     undoCount: 0,
     saveError: false,
     debugProbe: '',
@@ -124,30 +125,19 @@ Page({
       wx.showToast({ title: '图纸有改动，部分进度已清理', icon: 'none', duration: 2500 });
     }
 
-    // 页面和 canvas **一直挂在模板里**（不用 wx:if 挡）——
-    // 初始为 false 时 canvas 是后创建的，实测会出现「画上去了但屏幕上不显示」。
-    // 加载态改用盖在画布上的遮罩。
-    this.setData({ name: p.name });
-
-    // 量画布容器的真实可用区域（.canvas-wrap 是 flex:1 + min-height:0，
-    // 高度由布局决定，不会被里面的画布撑开）
-    const area = await new Promise((resolve) => {
-      wx.createSelectorQuery()
-        .in(this)
-        .select('.canvas-wrap')
-        .fields({ size: true })
-        .exec((res) => resolve(res && res[0] ? res[0] : null));
-    });
+    // 尺寸从**窗口高度**算，不再依赖容器测量 ——
+    // 结构和编辑器页（画布显示正常）对齐：整页普通文档流，不是 flex + 100vh。
     const info = canvasHelper.getWindowInfo();
-    const availW = area && area.width ? area.width - 12 : info.windowWidth - 36;
-    const availH = area && area.height ? area.height - 12 : info.windowHeight - 340;
-    const box = gridCanvas.fitBox(availW, Math.max(120, availH), this.dims.M / this.dims.N);
+    const box = gridCanvas.fitBox(
+      info.windowWidth - 24,
+      Math.max(200, info.windowHeight - 370),
+      this.dims.M / this.dims.N
+    );
     this.cssW = box.w;
     this.cssH = box.h;
-
-    if (box.w !== this.data.canvasW || box.h !== this.data.canvasH) {
-      await new Promise((r) => this.setData({ canvasW: box.w, canvasH: box.h }, r));
-    }
+    await new Promise((r) =>
+      this.setData({ name: p.name, canvasW: box.w, canvasH: box.h, wrapH: box.h }, r)
+    );
 
     try {
       this.display = await canvasHelper.initDisplayCanvas('#pattern', this);
@@ -158,9 +148,10 @@ Page({
 
     this.restoreView(p.view);
     this.refreshColorList();
-    // 关掉加载遮罩再画，避免遮罩把首次绘制盖住
-    this.setData({ ready: true });
-    this.redraw();
+    // 关掉加载遮罩，**在渲染回调里再画** —— 避免页面更新发生在绘制之后
+    this.setData({ ready: true }, () => {
+      this.redraw();
+    });
 
     // 【临时诊断 + 尝试自修复】
     // 重新取一次 canvas 节点，和首次取的比对：

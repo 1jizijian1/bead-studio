@@ -1,8 +1,6 @@
-/* 整页不滚动：手势全在画布上，页面滚动会和拖动打架 */
+/* 结构刻意对齐编辑器页（它的画布显示正常）：
+   普通文档流，不用整页 flex + 100vh。 */
 .page {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
   padding: 0 24rpx;
   box-sizing: border-box;
 }
@@ -134,17 +132,14 @@
 
 /* ---------- 画布 ---------- */
 .canvas-wrap {
-  flex: 1;
-  min-height: 0; /* 关键：不加的话 flex 子项会被内容撑开，尺寸测不准 */
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* ⚠️ 不要加 overflow: hidden。
-     canvas 在小程序里是**原生层组件**，被容器裁剪时可能出现
-     「内容画上去了（getImageData 能读到）但屏幕上不显示」——
-     编辑器页的容器没有这行，显示正常；进度页加了就白屏。 */
-  background: #ffffff;
+  /* ⚠️ 不要加 overflow: hidden（原生层组件被裁剪可能整个不显示） */
+  /* 【临时诊断】底色改成黄的：如果那块区域变黄，说明画布没显示出来；
+     如果还是白的，说明画布显示了但内容被清空。定位完改回 #ffffff。 */
+  background: #fff8dc;
   border-radius: 16rpx;
   box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
 }
