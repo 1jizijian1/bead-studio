@@ -386,7 +386,33 @@ function markDirty(id, data) {
   }, throttleMs);
 }
 
-/** onHide / onUnload：立刻同步落盘，并收掉待触发的定时器 */
+/**
+ * 立刻同步落盘，不等节流定时器。
+ *
+ * 为什么需要它：进度页原来是「节流 1.5 秒 + onHide 时强制落盘」，
+ * 但**用户直接杀掉小程序时 onHide 不一定触发**（开发者工具和真机都一样），
+ * 那 1.5 秒没到的话数据就丢了。
+ *
+ * 而进度数据才 1~9KB，同步写一次约 1ms —— 压根没慢到需要节流。
+ * 所以改成**每次改动都立刻落盘**，节流那套只留作兼容。
+ */
+function saveNow(id, data) {
+  const entry = pending.get(id);
+  if (entry) {
+    if (entry.timer) clearTimeout(entry.timer);
+    pending.delete(id);
+  }
+  try {
+    writeProgressRecord(id, data);
+    lastError = null;
+    return true;
+  } catch (e) {
+    lastError = { id, reason: 'quota' };
+    return false;
+  }
+}
+
+/** onHide / onUnload：把还挂着的都写下去（保险用的第二道） */
 function flushSync() {
   let ok = true;
   pending.forEach((entry, id) => {
@@ -435,6 +461,7 @@ module.exports = {
   loadProject,
   deleteProject,
   markDirty,
+  saveNow,
   flushSync,
   getLastError,
   getStorageUsage,

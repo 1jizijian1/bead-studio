@@ -128,17 +128,11 @@ Page({
   /**
    * 不拦用户离开（不调 enableAlertBeforeUnload）。进度是自动保存的，
    * 加拦截反而让人以为「不点确认就丢了」。⚠️ 后人别「好心」加上。
+   *
+   * 这里的 flush 是**第二道保险** —— 每次改动其实已经实时落盘了（见 markDirty）。
    */
   flush() {
     if (!this.model) return;
-    if (this.dirty) {
-      projectStore.markDirty(this.projectId, {
-        bitmap: this.bitmap,
-        view: null,
-        currentColor: this.currentColor,
-      });
-      this.dirty = false;
-    }
     projectStore.flushSync();
   },
 
@@ -605,14 +599,20 @@ Page({
     this.markDirty();
   },
 
+  /**
+   * 每次改动**立刻同步落盘**。
+   *
+   * 不要改回「节流 + onHide 落盘」：用户直接杀掉小程序时 `onHide` 不一定触发
+   * （开发者工具和真机都一样），节流窗口里的改动就丢了。
+   * 进度数据才 1~9KB、同步写约 1ms，不值得为它做节流。
+   */
   markDirty() {
-    this.dirty = true;
-    projectStore.markDirty(this.projectId, {
+    const ok = projectStore.saveNow(this.projectId, {
       bitmap: this.bitmap,
       view: null,
       currentColor: this.currentColor,
     });
-    this.setData({ saveError: !!projectStore.getLastError() });
+    this.setData({ saveError: !ok });
   },
 
   onReset() {
