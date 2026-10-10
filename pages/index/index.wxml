@@ -43,6 +43,7 @@
       <view class="pick-desc">
         {{projectCount}} 个在拼 · 最近一个拼到 {{topPercent}}%
       </view>
+      <view class="pick-hint">作品拼完后可以拍照打卡，一键分享给好友</view>
     </view>
 
     <view class="tip-card">

@@ -118,6 +118,13 @@
   color: #6b7280;
 }
 
+/* 「我的拼豆」下面那行小字 */
+.pick-hint {
+  margin-top: 10rpx;
+  font-size: 21rpx;
+  color: #a5b4fc;
+}
+
 /* ---------- 选图建议 ---------- */
 .tip-card {
   margin-top: 8rpx;
