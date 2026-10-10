@@ -1,0 +1,106 @@
+.page {
+  padding: 24rpx 24rpx calc(40rpx + env(safe-area-inset-bottom));
+}
+
+.head {
+  padding: 8rpx 8rpx 24rpx;
+}
+
+.name {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.stats {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: #9ca3af;
+}
+
+/* ---------- 卡片预览 ---------- */
+.preview {
+  position: relative;
+  border-radius: 20rpx;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+  min-height: 400rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-img {
+  width: 100%;
+  display: block;
+}
+
+.empty {
+  font-size: 26rpx;
+  color: #9ca3af;
+  padding: 120rpx 0;
+}
+
+.rendering {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 26rpx;
+}
+
+/* ---------- 操作 ---------- */
+.actions {
+  margin-top: 24rpx;
+  display: flex;
+  gap: 20rpx;
+}
+
+.btn {
+  flex: 1;
+  text-align: center;
+  padding: 28rpx 0;
+  border-radius: 18rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.btn.ghost {
+  background: #ffffff;
+  color: #374151;
+  box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.06);
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  box-shadow: 0 8rpx 28rpx rgba(99, 102, 241, 0.3);
+}
+
+.btn.full {
+  flex: 1;
+}
+
+.tip {
+  margin-top: 24rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
+/* 隐藏渲染画布 */
+.hidden-canvas {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  opacity: 0;
+  pointer-events: none;
+}

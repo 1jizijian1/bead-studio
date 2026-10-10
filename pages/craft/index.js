@@ -482,6 +482,19 @@ Page({
       wx.vibrateShort({ type: 'medium' });
       this.advanceColor();
     }
+
+    // 整张拼完 → 等一下再跳到打卡页（这是「完成了」最自然的时刻）
+    if (this.beadTotal > 0 && this.doneTotal === this.beadTotal) {
+      if (!this._autoCheckin) {
+        this._autoCheckin = true;
+        setTimeout(() => {
+          wx.navigateTo({ url: `/pages/checkin/index?id=${this.projectId}` });
+        }, 700);
+      }
+    } else {
+      // 撤销/取消标记之后，下次再拼完还能自动跳
+      this._autoCheckin = false;
+    }
   },
 
   /** 自动跳到下一个未完成色（原版的好设计，保留） */
@@ -635,6 +648,11 @@ Page({
         wx.showToast({ title: '进度已重置', icon: 'success' });
       },
     });
+  },
+
+  onCheckin() {
+    this.flush();
+    wx.navigateTo({ url: `/pages/checkin/index?id=${this.projectId}` });
   },
 
   onBack() {

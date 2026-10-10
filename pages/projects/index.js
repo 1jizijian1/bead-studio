@@ -34,7 +34,19 @@ Page({
     const raw = projectStore.listProjects();
     const usage = projectStore.getStorageUsage();
 
-    this.thumbs = raw.map((m) => (m.thumb && m.thumb.cells ? codec.unpackThumb(m.thumb) : null));
+    // 有打卡照片的直接显示照片；没有的才用 canvas 画图纸缩略图。
+    // 注意 canvas 只给「没有照片」的那些项，所以要记下它们对应列表里的第几个，
+    // 否则 selectAll 拿到的节点顺序跟列表项对不上。
+    this.thumbs = [];
+    this.needCanvas = [];
+    raw.forEach((m, k) => {
+      if (m.cover) {
+        this.thumbs.push(null);
+        return;
+      }
+      this.needCanvas.push(k);
+      this.thumbs.push(m.thumb && m.thumb.cells ? codec.unpackThumb(m.thumb) : null);
+    });
 
     const list = raw.map((m) => {
       const pct = m.total ? Math.round((m.done / m.total) * 100) : 0;
@@ -46,6 +58,7 @@ Page({
         total: m.total,
         percent: pct,
         finished: pct >= 100,
+        cover: m.cover || '',
         updated: timeAgo(m.updatedAt),
         colorCount: m.colorCount || 0,
       };
@@ -61,17 +74,17 @@ Page({
         usageWarn: usage.ratio > 0.8,
       },
       () => {
-        if (list.length) this.drawThumbs();
+        if (this.needCanvas.length) this.drawThumbs();
       }
     );
   },
 
-  /** 一次查询拿到所有缩略图 canvas 节点，按顺序对应列表项 */
+  /** 一次查询拿到所有缩略图 canvas 节点，按 needCanvas 里的下标对应回列表项 */
   async drawThumbs() {
     const nodes = await new Promise((resolve) => {
       wx.createSelectorQuery()
         .in(this)
-        .selectAll('.thumb')
+        .selectAll('.thumb-canvas')
         .fields({ node: true, size: true })
         .exec((res) => resolve(res && res[0] ? res[0] : []));
     });
@@ -79,7 +92,7 @@ Page({
     const dpr = canvasHelper.getPixelRatio();
     for (let k = 0; k < nodes.length; k++) {
       const info = nodes[k];
-      const thumb = this.thumbs[k];
+      const thumb = this.thumbs[this.needCanvas[k]];
       if (!info || !info.node || !thumb) continue;
 
       const cssW = info.width;
@@ -124,6 +137,12 @@ Page({
     const id = e.currentTarget.dataset.id;
     if (!id) return;
     wx.navigateTo({ url: `/pages/craft/index?id=${id}` });
+  },
+
+  onCheckin(e) {
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    wx.navigateTo({ url: `/pages/checkin/index?id=${id}` });
   },
 
   onDelete(e) {

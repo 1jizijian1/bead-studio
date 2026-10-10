@@ -62,7 +62,7 @@
         data-zoom="{{item}}" bindtap="onZoomChange"
       >{{item}}×</view>
     </view>
-    <view class="hint">整张 {{progressPercent}}%（{{doneText}} 颗）</view>
+    <view class="hint" bindtap="onCheckin">整张 {{progressPercent}}%（{{doneText}} 颗）· 作品打卡 ›</view>
   </view>
 
   <!-- 主操作 -->

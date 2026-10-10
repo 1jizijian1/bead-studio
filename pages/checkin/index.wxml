@@ -1,0 +1,32 @@
+<view class="page" wx:if="{{ready}}">
+  <view class="head">
+    <view class="name">{{name}}</view>
+    <view class="stats">{{statsText}}</view>
+  </view>
+
+  <view class="preview">
+    <image
+      wx:if="{{cardSrc}}"
+      class="card-img"
+      src="{{cardSrc}}"
+      mode="widthFix"
+      bindtap="onPreviewCard"
+    />
+    <view wx:else class="empty">正在生成打卡图…</view>
+    <view class="rendering" wx:if="{{rendering}}"><text>生成中…</text></view>
+  </view>
+
+  <view class="actions">
+    <view class="btn ghost" bindtap="onPickPhoto">{{hasPhoto ? '换张照片' : '拍照 / 选图'}}</view>
+    <view class="btn primary" bindtap="onSaveCard">保存到相册</view>
+  </view>
+  <view class="actions">
+    <view class="btn ghost full" bindtap="onShareCard">分享给好友</view>
+  </view>
+
+  <view class="tip">加上实拍照片，打卡图会更好看；不加就只展示图纸。</view>
+
+  <!-- 隐藏画布：只用来出图，不参与显示 -->
+  <canvas type="2d" id="thumb" class="hidden-canvas" style="width:{{tw}}px;height:{{th}}px;"></canvas>
+  <canvas type="2d" id="card" class="hidden-canvas" style="width:720px;height:1080px;"></canvas>
+</view>

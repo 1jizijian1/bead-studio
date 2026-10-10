@@ -312,8 +312,65 @@ function renameProject(id, name) {
   }
 }
 
+/**
+ * 打卡照片的存取。
+ *
+ * 照片 1~3MB，**绝对不能进 storage**（单 key 上限 1MB）。
+ * 所以用 `FileSystemManager.saveFile` 落到 `USER_DATA_PATH` 拿一个永久路径，
+ * 索引里只存这个路径。
+ *
+ * ⚠️ `wx.chooseMedia` 给的是**临时路径**，App 重启就失效 —— 必须先拷走。
+ */
+function saveCover(id, tempFilePath) {
+  return new Promise((resolve, reject) => {
+    let fs;
+    try {
+      fs = wx.getFileSystemManager();
+    } catch (e) {
+      reject(new Error('拿不到文件系统'));
+      return;
+    }
+    const ext = /\.(png|jpg|jpeg|webp)$/i.exec(tempFilePath);
+    const target = `${wx.env.USER_DATA_PATH}/cover_${id}${ext ? ext[0] : '.jpg'}`;
+
+    fs.saveFile({
+      tempFilePath,
+      filePath: target,
+      success: (res) => {
+        // 记进索引（meta.cover）。以后接云端时这里换成上传后拿到的 url
+        const list = readIndex();
+        const idx = list.findIndex((m) => m.id === id);
+        if (idx >= 0) {
+          list[idx].cover = res.savedFilePath;
+          list[idx].updatedAt = Date.now();
+          try {
+            writeIndex(list);
+          } catch (e) {
+            /* 索引写失败不影响照片已经存下这件事 */
+          }
+        }
+        resolve(res.savedFilePath);
+      },
+      fail: (e) => reject(new Error((e && e.errMsg) || '照片保存失败')),
+    });
+  });
+}
+
+/** 删项目时顺手把照片文件也删了，别留孤儿 */
+function deleteCover(id) {
+  const list = readIndex();
+  const meta = list.find((m) => m.id === id);
+  if (!meta || !meta.cover) return;
+  try {
+    wx.getFileSystemManager().unlink({ filePath: meta.cover, fail: () => {} });
+  } catch (e) {
+    /* 文件可能已经不在了，忽略 */
+  }
+}
+
 function deleteProject(id) {
   const store = getStorage();
+  deleteCover(id); // 顺手把打卡照片文件删掉，别留孤儿
   store.removeSync(PROJECT_PREFIX + id);
   store.removeSync(PROGRESS_PREFIX + id);
   writeIndex(readIndex().filter((m) => m.id !== id));
@@ -459,6 +516,8 @@ module.exports = {
   overwrite,
   renameProject,
   loadProject,
+  saveCover,
+  deleteCover,
   deleteProject,
   markDirty,
   saveNow,

@@ -17,7 +17,14 @@
     data-id="{{item.id}}"
     bindtap="onOpen"
   >
-    <canvas type="2d" class="thumb"></canvas>
+    <!-- 打卡过的直接显示照片；没有的才画图纸缩略图 -->
+    <image
+      wx:if="{{item.cover}}"
+      class="thumb"
+      src="{{item.cover}}"
+      mode="aspectFill"
+    />
+    <canvas wx:else type="2d" class="thumb thumb-canvas"></canvas>
 
     <view class="info">
       <view class="row-top">
@@ -35,11 +42,19 @@
       </view>
     </view>
 
-    <view
-      class="del"
-      data-id="{{item.id}}"
-      data-name="{{item.name}}"
-      catchtap="onDelete"
-    >删除</view>
+    <view class="row-actions">
+      <view
+        wx:if="{{item.finished}}"
+        class="act act-hi"
+        data-id="{{item.id}}"
+        catchtap="onCheckin"
+      >打卡</view>
+      <view
+        class="act"
+        data-id="{{item.id}}"
+        data-name="{{item.name}}"
+        catchtap="onDelete"
+      >删除</view>
+    </view>
   </view>
 </view>

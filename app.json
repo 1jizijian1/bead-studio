@@ -4,7 +4,8 @@
     "pages/editor/index",
     "pages/palette/index",
     "pages/craft/index",
-    "pages/projects/index"
+    "pages/projects/index",
+    "pages/checkin/index"
   ],
   "window": {
     "navigationBarBackgroundColor": "#1F2937",
