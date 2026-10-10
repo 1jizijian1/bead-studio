@@ -29,7 +29,18 @@ Page({
     colorList: [],
     currentKey: '',
     currentSwatch: '',
-    focusOnly: false,
+    /** 还剩多少颗没拼（这个色号） */
+    currentRemain: 0,
+    currentTotal: 0,
+    currentDone: 0,
+    currentPercent: 0,
+    /**
+     * 默认**只显示当前色号**（其他色淡掉）。
+     * 这个工具的定位是「按色号分批拼」的辅助：倒出一盒 A01，
+     * 一眼看到它所有的位置，摆完换下一盒。
+     * 在纸质图纸上找出分散的几十处同一个色号是最难受的一步。
+     */
+    singleColor: true,
     zoom: 1,
     canvasW: 300,
     canvasH: 300,
@@ -190,11 +201,12 @@ Page({
   },
 
   /** 色号列表：顺序固定（按色号排），**不要把完成的挪到后面** ——
-   *  边拼边重排会让人失去空间感。 */
+   *  边拼边重排会让人失去空间感。顺带记下排序后的顺序，供「上一个/下一个色」用。 */
   refreshColorList() {
     const order = [];
     for (let i = 0; i < this.hexes.length; i++) order.push(i);
     order.sort((a, b) => paletteUtil.sortColorKeys(this.keys[a], this.keys[b]));
+    this.sortedIdx = order;
 
     const list = order.map((i) => ({
       idx: i,
@@ -206,30 +218,50 @@ Page({
       isCurrent: this.hexes[i] === this.currentColor,
     }));
 
-    const curIdx = this.currentIdx >= 0 ? this.currentIdx : 0;
-    this.setData({
-      colorList: list,
-      currentKey: this.keys[curIdx],
-      currentSwatch: this.hexes[curIdx],
-      doneText: `${this.doneTotal} / ${this.beadTotal}`,
-      progressPercent: this.beadTotal ? Math.round((this.doneTotal / this.beadTotal) * 100) : 0,
-    });
+    this.setData(
+      Object.assign(
+        {
+          colorList: list,
+          doneText: `${this.doneTotal} / ${this.beadTotal}`,
+          progressPercent: this.beadTotal
+            ? Math.round((this.doneTotal / this.beadTotal) * 100)
+            : 0,
+        },
+        this.currentColorPatch()
+      )
+    );
+  },
+
+  /** 顶部「正在拼 XX · 还剩 N 颗」那一块的字段 */
+  currentColorPatch() {
+    const idx = this.currentIdx >= 0 ? this.currentIdx : 0;
+    const total = this.colorTotal ? this.colorTotal[idx] : 0;
+    const done = this.colorDone ? this.colorDone[idx] : 0;
+    return {
+      currentKey: this.keys[idx],
+      currentSwatch: this.hexes[idx],
+      currentTotal: total,
+      currentDone: done,
+      currentRemain: Math.max(0, total - done),
+      currentPercent: total ? Math.round((done / total) * 100) : 0,
+    };
   },
 
   // ---------- 渲染 ----------
 
-  /** 只更新当前色那行的进度，避免整块数组重发 */
+  /** 只更新当前色那行的进度 + 顶部那一块，避免整块数组重发 */
   patchColorProgress(idx) {
+    const patch = {};
+    if (idx === this.currentIdx) Object.assign(patch, this.currentColorPatch());
     const list = this.data.colorList;
     for (let k = 0; k < list.length; k++) {
       if (list[k].idx === idx) {
-        const patch = {};
         patch[`colorList[${k}].done`] = this.colorDone[idx];
         patch[`colorList[${k}].isDone`] = this.colorDone[idx] >= this.colorTotal[idx];
-        this.setData(patch);
-        return;
+        break;
       }
     }
+    if (Object.keys(patch).length) this.setData(patch);
   },
 
   redraw() {
@@ -239,7 +271,8 @@ Page({
     const cells = this.cells;
     const bitmap = this.bitmap;
     const curIdx = this.currentIdx;
-    const focus = this.data.focusOnly;
+    // singleColor 开启时其他色号淡到几乎看不见 —— 当前色的位置一眼跳出来
+    const focus = this.data.singleColor;
     const solid = this.solid;
     const faded = this.faded;
     const faint = this.faint;
@@ -533,7 +566,7 @@ Page({
     this.currentColor = hex;
     this.currentIdx = idx;
     const list = this.data.colorList;
-    const patch = { currentKey: this.keys[idx], currentSwatch: hex };
+    const patch = this.currentColorPatch();
     for (let k = 0; k < list.length; k++) {
       const isCur = list[k].idx === idx;
       if (list[k].isCurrent !== isCur) patch[`colorList[${k}].isCurrent`] = isCur;
@@ -549,9 +582,73 @@ Page({
     this.setCurrent(this.hexes[idx], idx);
   },
 
-  onToggleFocus() {
-    this.setData({ focusOnly: !this.data.focusOnly });
+  /** 按色号顺序切到上一个/下一个（分批拼的自然操作：倒一盒、拼完、换下一盒） */
+  stepColor(delta) {
+    const order = this.sortedIdx;
+    if (!order || !order.length) return;
+    let pos = order.indexOf(this.currentIdx);
+    if (pos < 0) pos = 0;
+    const next = order[(pos + delta + order.length) % order.length];
+    this.setCurrent(this.hexes[next], next);
+  },
+
+  onPrevColor() {
+    this.stepColor(-1);
+  },
+
+  onNextColor() {
+    this.stepColor(1);
+  },
+
+  onToggleSingleColor() {
+    this.setData({ singleColor: !this.data.singleColor });
     this.redraw();
+  },
+
+  /**
+   * 「这个色拼完了」：把当前色号**剩下没拼的格子一次性标完**，然后跳到下一个色号。
+   *
+   * 这是分批拼法的核心加速 —— 盯着只剩当前色的图纸把豆子摆完，
+   * 然后一个按钮收尾，不用回头一颗颗打勾。
+   */
+  onFinishColor() {
+    const idx = this.currentIdx;
+    if (idx < 0) return;
+    const remain = this.colorTotal[idx] - this.colorDone[idx];
+    if (remain <= 0) {
+      this.stepColor(1);
+      return;
+    }
+
+    wx.showModal({
+      title: `拼完 ${this.keys[idx]}`,
+      content: `把 ${this.keys[idx]} 剩下没拼的 ${remain} 颗都标成已拼，然后跳到下一个色号。确定吗？`,
+      confirmText: '拼完了',
+      success: (m) => {
+        if (!m.confirm) return;
+        this.markWholeColor(idx);
+      },
+    });
+  },
+
+  /** 把某个色号剩下所有格子标为已拼（可撤销） */
+  markWholeColor(idx) {
+    const cells = this.cells;
+    const list = new Int32Array(cells.length);
+    let n = 0;
+    for (let k = 0; k < cells.length; k++) {
+      if (cells[k] === idx && !codec.getBit(this.bitmap, k)) list[n++] = k;
+    }
+    if (n === 0) {
+      this.stepColor(1);
+      return;
+    }
+
+    // 交给 applyCells 统一处理：它会压撤销栈、更新计数、节流落盘，
+    // 并且因为这个色已经拼完而**自动跳到下一个未完成色**（不用在这里再跳一次）
+    this.applyCells(list.subarray(0, n), true);
+    wx.vibrateShort({ type: 'medium' });
+    wx.showToast({ title: `${this.keys[idx]} 标为已拼`, icon: 'none' });
   },
 
   onUndo() {

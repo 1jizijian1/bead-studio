@@ -6,32 +6,24 @@
     <view class="reset" bindtap="onReset">重置</view>
   </view>
 
-  <!-- 总进度 -->
-  <view class="overall">
-    <view class="overall-bar">
-      <view class="overall-fill" style="width:{{progressPercent}}%"></view>
+  <!-- 主角：现在在拼哪个色号、还剩多少颗 -->
+  <view class="hero">
+    <view class="hero-swatch" style="background:{{currentSwatch}}"></view>
+    <view class="hero-meta">
+      <view class="hero-label">现在拼</view>
+      <view class="hero-key">{{currentKey}}</view>
     </view>
-    <view class="overall-text">
-      <text class="pct">{{progressPercent}}%</text>
-      <text class="cnt">{{doneText}} 颗</text>
+    <view class="hero-count">
+      <view class="hero-remain">{{currentRemain}}<text class="hero-unit"> 颗没拼</text></view>
+      <view class="hero-total">共 {{currentTotal}} 颗</view>
+    </view>
+    <view class="hero-nav">
+      <view class="nav-btn" bindtap="onPrevColor">‹</view>
+      <view class="nav-btn" bindtap="onNextColor">›</view>
     </view>
   </view>
-
-  <!-- 当前色 + 工具 -->
-  <view class="toolbar">
-    <view class="cur">
-      <view class="cur-swatch" style="background:{{currentSwatch}}"></view>
-      <view class="cur-meta">
-        <text class="cur-label">正在拼</text>
-        <text class="cur-key">{{currentKey}}</text>
-      </view>
-    </view>
-    <view class="tools">
-      <view class="tool {{focusOnly ? 'tool-on' : ''}}" bindtap="onToggleFocus">只看当前色</view>
-      <view class="tool {{undoCount ? '' : 'tool-dim'}}" bindtap="onUndo">
-        撤销<text wx:if="{{undoCount}}"> {{undoCount}}</text>
-      </view>
-    </view>
+  <view class="hero-bar">
+    <view class="hero-fill" style="width:{{currentPercent}}%"></view>
   </view>
 
   <!-- 画布 -->
@@ -49,9 +41,20 @@
 
     <view class="zoom-badge" wx:if="{{zoom > 1.01}}" bindtap="onResetZoom">{{zoom}}× · 复位</view>
     <view class="save-warn" wx:if="{{saveError}}">⚠︎ 未保存</view>
+    <view class="legend" wx:if="{{singleColor}}">只显示 {{currentKey}}</view>
   </view>
 
-  <view class="hint">点格子标记 · 长按标记整块 · 双指缩放</view>
+  <view class="hint">整张 {{progressPercent}}%（{{doneText}} 颗）· 长按标记整块 · 双指缩放</view>
+
+  <!-- 主操作 -->
+  <view class="actions">
+    <view class="act-main" bindtap="onFinishColor">
+      这盒 {{currentKey}} 拼完了（{{currentRemain}} 颗）→
+    </view>
+    <view class="act-side {{singleColor ? 'act-on' : ''}}" bindtap="onToggleSingleColor">
+      {{singleColor ? '显示全部色' : '只看当前色'}}
+    </view>
+  </view>
 
   <!-- 色号列表 -->
   <scroll-view class="strip" scroll-x enhanced show-scrollbar="{{false}}">
