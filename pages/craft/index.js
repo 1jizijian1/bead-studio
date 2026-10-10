@@ -11,6 +11,12 @@ const LONG_PRESS_MS = 420;
 const MOVE_TOLERANCE = 6;
 /** 单块超过这么多格，长按标记前先确认（避免误标一整片背景） */
 const BIG_REGION_CONFIRM = 500;
+/**
+ * 恢复「上次在拼的色号」的最低占比门槛。
+ * 低于这个占比就不恢复、直接换成剩余最多的 —— 否则单色模式下
+ * 整张画布几乎全是淡灰，看着像没画（这个坑踩过两次了）。
+ */
+const MIN_CURRENT_SHARE = 0.05;
 const MAX_UNDO = 50;
 
 /**
@@ -99,10 +105,17 @@ Page({
     // 顺序要紧：recount 出每种色的总数/已完成数 -> 才能选「当前色」-> 才能建颜色表
     // （buildColorTables 里会按 currentColor 算 currentIdx）
     this.recount();
+    // 恢复上次在拼的色号，但**只有它还剩足够多**才恢复。
+    // 踩过的坑：老版本会把「编码时第一个遇到的颜色」（可能只占 0.2%）存下来，
+    // 恢复它会让单色模式下整张画布几乎全是淡灰，看着像没画。
+    // 太小就直接换成剩余最多的色号。
+    const savedIdx = p.currentColor ? this.hexes.indexOf(p.currentColor) : -1;
+    const savedShare =
+      savedIdx >= 0 && this.beadTotal
+        ? (this.colorTotal[savedIdx] - this.colorDone[savedIdx]) / this.beadTotal
+        : 0;
     this.currentColor =
-      p.currentColor && this.hexes.indexOf(p.currentColor) >= 0
-        ? p.currentColor
-        : this.firstUnfinishedColor();
+      savedShare >= MIN_CURRENT_SHARE ? p.currentColor : this.firstUnfinishedColor();
     this.buildColorTables();
 
     if (p.dropped) {
@@ -341,11 +354,14 @@ Page({
       try {
         const canvas = this.display.canvas;
         const px = ctx.getImageData(canvas.width >> 1, canvas.height >> 1, 1, 1).data;
+        const remain = this.colorTotal[curIdx] - this.colorDone[curIdx];
+        const share = this.beadTotal ? ((remain / this.beadTotal) * 100).toFixed(1) : '0';
         this.setData({
           debugProbe:
             `中心像素 rgb(${px[0]},${px[1]},${px[2]}) · ` +
             `canvas ${canvas.width}×${canvas.height} · css ${this.display.cssW}×${this.display.cssH} · ` +
-            `网格 ${this.dims.N}×${this.dims.M} · 当前色idx ${curIdx}/${this.hexes.length}`,
+            `网格 ${this.dims.N}×${this.dims.M} · ` +
+            `当前色 ${this.keys[curIdx]} 剩 ${remain} 颗（占 ${share}%）`,
         });
       } catch (e) {
         this.setData({ debugProbe: '回读失败：' + (e.message || e) });
