@@ -27,6 +27,9 @@
     </view>
   </view>
 
+  <!-- 【临时诊断】定位完删 -->
+  <view class="draw-probe" wx:if="{{drawProbe}}">{{drawProbe}}</view>
+
   <!-- 点格子提示 -->
   <view class="tip" wx:if="{{tip}}">
     <view class="tip-swatch" style="background:{{tip.color}};"></view>

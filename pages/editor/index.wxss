@@ -318,3 +318,14 @@
   opacity: 0;
   pointer-events: none;
 }
+
+/* 【临时诊断】定位完删掉 */
+.draw-probe {
+  margin-top: 12rpx;
+  font-size: 18rpx;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-radius: 8rpx;
+  padding: 10rpx 14rpx;
+  word-break: break-all;
+}

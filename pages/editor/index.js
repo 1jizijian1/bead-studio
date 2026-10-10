@@ -61,6 +61,7 @@ Page({
 
     exportCssW: 0,
     exportCssH: 0,
+    drawProbe: '',
   },
 
   // ---------- 生命周期 ----------
@@ -308,20 +309,43 @@ Page({
 
     // 绘制内核与拼豆进度页共用（utils/gridCanvas.js）。
     // 抽取时用 tools/render-grid.js 的假 ctx 做过逐调用比对，行为与原来的内联实现一致。
-    gridCanvas.draw(ctx, {
-      cssW,
-      cssH,
-      dpr,
-      dims: this.dims,
-      view: this.view,
-      bg: '#ffffff',
-      getColor: (i, j) => {
-        const cell = grid[j][i];
-        return cell.isExternal ? constants.EXTERNAL_CELL_COLOR : cell.color;
-      },
-      gridLines: { color: 'rgba(0, 0, 0, 0.16)', width: 0.6, minCellPx: 4 },
-      border: { color: 'rgba(0, 0, 0, 0.35)', width: 1 },
-    });
+    try {
+      gridCanvas.draw(ctx, {
+        cssW,
+        cssH,
+        dpr,
+        dims: this.dims,
+        view: this.view,
+        bg: '#ffffff',
+        getColor: (i, j) => {
+          const cell = grid[j][i];
+          return cell.isExternal ? constants.EXTERNAL_CELL_COLOR : cell.color;
+        },
+        gridLines: { color: 'rgba(0, 0, 0, 0.16)', width: 0.6, minCellPx: 4 },
+        border: { color: 'rgba(0, 0, 0, 0.35)', width: 1 },
+      });
+    } catch (err) {
+      // 【临时诊断】真机 canvas 的方法和假 ctx 不完全一致，可能在这里抛错。
+      this.setData({ drawProbe: '★draw 抛错：' + ((err && err.message) || String(err)) });
+      return;
+    }
+
+    // 【临时诊断】画完回读中心像素
+    if (!this._probed) {
+      this._probed = true;
+      try {
+        const canvas = this.display.canvas;
+        const px = ctx.getImageData(canvas.width >> 1, canvas.height >> 1, 1, 1).data;
+        this.setData({
+          drawProbe:
+            `像素 ${px[0]},${px[1]},${px[2]} · canvas ${canvas.width}×${canvas.height} · ` +
+            `css ${cssW}×${cssH} · 视口 scale=${this.view.scale} tx=${this.view.tx} · ` +
+            `网格 ${this.dims.N}×${this.dims.M}`,
+        });
+      } catch (e) {
+        this.setData({ drawProbe: '回读失败：' + ((e && e.message) || String(e)) });
+      }
+    }
   },
 
   // ---------- 缩放 / 平移 ----------
