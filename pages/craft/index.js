@@ -58,6 +58,7 @@ Page({
     canvasH: 300,
     undoCount: 0,
     saveError: false,
+    debugProbe: '',
   },
 
   // ---------- 生命周期 ----------
@@ -311,6 +312,24 @@ Page({
       gridLines: { color: 'rgba(0, 0, 0, 0.14)', width: 0.6, minCellPx: 5 },
       border: { color: 'rgba(0, 0, 0, 0.3)', width: 1 },
     });
+
+    // 【临时诊断】画完回读画布中心的像素，判断是「没画」还是「画了但颜色是白的」。
+    // 定位完就删。
+    if (!this._probed) {
+      this._probed = true;
+      try {
+        const canvas = this.display.canvas;
+        const px = ctx.getImageData(canvas.width >> 1, canvas.height >> 1, 1, 1).data;
+        this.setData({
+          debugProbe:
+            `中心像素 rgb(${px[0]},${px[1]},${px[2]}) · ` +
+            `canvas ${canvas.width}×${canvas.height} · css ${this.display.cssW}×${this.display.cssH} · ` +
+            `网格 ${this.dims.N}×${this.dims.M} · 当前色idx ${curIdx}/${this.hexes.length}`,
+        });
+      } catch (e) {
+        this.setData({ debugProbe: '回读失败：' + (e.message || e) });
+      }
+    }
   },
 
   // ---------- 视口 ----------

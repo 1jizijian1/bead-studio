@@ -191,6 +191,18 @@
   padding: 12rpx 0 4rpx;
 }
 
+/* 【临时诊断】定位完删掉 */
+.debug {
+  flex-shrink: 0;
+  font-size: 18rpx;
+  color: #b91c1c;
+  background: #fef2f2;
+  border-radius: 8rpx;
+  padding: 8rpx 12rpx;
+  margin: 4rpx 0;
+  word-break: break-all;
+}
+
 /* ---------- 主操作 ---------- */
 .actions {
   flex-shrink: 0;

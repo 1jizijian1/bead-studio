@@ -45,6 +45,7 @@
   </view>
 
   <view class="hint">整张 {{progressPercent}}%（{{doneText}} 颗）· 长按标记整块 · 双指缩放</view>
+  <view class="debug" wx:if="{{debugProbe}}">{{debugProbe}}</view>
 
   <!-- 主操作 -->
   <view class="actions">
