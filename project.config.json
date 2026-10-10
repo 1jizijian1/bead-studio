@@ -9,7 +9,7 @@
     "es6": true,
     "enhance": true,
     "postcss": true,
-    "minified": false,
+    "minified": true,
     "urlCheck": false,
     "checkInvalidKey": true,
     "ignoreUploadUnusedFiles": true,
