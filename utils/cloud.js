@@ -16,7 +16,7 @@
  */
 
 /** 云开发环境 ID。填上之后云功能自动生效 */
-const ENV_ID = '';
+const ENV_ID = 'cloudbase-d1gp9tt7m149cd7c4';
 
 const COLLECTION = 'patterns';
 
