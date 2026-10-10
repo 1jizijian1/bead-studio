@@ -4,7 +4,6 @@ const gridCanvas = require('../../utils/gridCanvas');
 const canvasHelper = require('../../utils/canvasHelper');
 const paletteUtil = require('../../utils/palette');
 const { createRegionFinder } = require('../../utils/connectedRegion');
-const constants = require('../../utils/constants');
 
 /** 长按判定：在 touchend 时按按住时长判断，**不设定时器** ——
  *  这样长按后继续拖动就自然变成平移，不需要处理 touchcancel。 */
@@ -14,10 +13,23 @@ const MOVE_TOLERANCE = 6;
 const BIG_REGION_CONFIRM = 500;
 const MAX_UNDO = 50;
 
-/** 预计算的显示色：非当前色灰掉、只看当前色时更淡、已完成变暗 */
+/**
+ * 预计算的显示色。
+ *
+ * 「只看当前色」时非当前色淡成一张**淡彩图**：整张图案的轮廓还在，
+ * 当前色号是清晰的那一层，一眼就能找到要摆的位置。
+ *
+ * ⚠️ 淡出目标**不能和空白格同色**。
+ * 之前这里往 #F3F4F6 混，而空白格也是 #F3F4F6 —— 结果整张画布糊成一片浅灰，
+ * 看着就像「没有图片」。现在淡出用浅灰 #e5e7eb、空白格用纯白，两者分得开。
+ */
 const FADE_T = 0.62;
-const FADE_STRONG_T = 0.88;
+const FADE_STRONG_T = 0.72;
+/** 淡出目标：浅灰。**不能等于 BLANK_COLOR** */
+const FADE_STRONG_TARGET = '#e5e7eb';
 const DONE_T = 0.55;
+/** 空白格：纯白，让它退到后面去 */
+const BLANK_COLOR = '#FFFFFF';
 
 Page({
   data: {
@@ -178,7 +190,7 @@ Page({
       const hex = this.hexes[i];
       this.solid[i] = hex;
       this.faded[i] = paletteUtil.mixHex(hex, '#9ca3af', FADE_T);
-      this.faint[i] = paletteUtil.mixHex(hex, '#f3f4f6', FADE_STRONG_T);
+      this.faint[i] = paletteUtil.mixHex(hex, FADE_STRONG_TARGET, FADE_STRONG_T);
       this.done[i] = paletteUtil.mixHex(hex, '#111827', DONE_T);
       this.keys[i] = paletteUtil.getDisplayColorKey(hex, this.colorSystem);
     }
@@ -270,14 +282,15 @@ Page({
     const N = this.dims.N;
     const cells = this.cells;
     const bitmap = this.bitmap;
-    const curIdx = this.currentIdx;
+    // 正常情况下 currentIdx 一定有效；万一颜色表对不上，退回 0 也比整张画布空白强
+    const curIdx = this.currentIdx >= 0 ? this.currentIdx : 0;
     // singleColor 开启时其他色号淡到几乎看不见 —— 当前色的位置一眼跳出来
     const focus = this.data.singleColor;
     const solid = this.solid;
     const faded = this.faded;
     const faint = this.faint;
     const doneColors = this.done;
-    const EXTERNAL = constants.EXTERNAL_CELL_COLOR;
+    const EXTERNAL = BLANK_COLOR;
     const EXT_IDX = codec.EXTERNAL_INDEX;
 
     gridCanvas.draw(ctx, {
