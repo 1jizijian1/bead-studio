@@ -1,34 +1,41 @@
 <view class="page">
-  <!-- 画布 -->
-  <view class="canvas-wrap">
-    <canvas
-      type="2d"
-      id="preview"
-      class="preview"
-      style="width:{{previewW}}px;height:{{previewH}}px;"
-      bindtap="onCanvasTap"
-      bindtouchstart="onTouchStart"
-      catchtouchmove="onTouchMove"
-      bindtouchend="onTouchEnd"
-      bindtouchcancel="onTouchEnd"
-    ></canvas>
+  <!-- 图纸：图片显示，scroll-view 负责平移 -->
+  <view class="canvas-box" style="height:{{boxH}}px;">
+    <scroll-view class="canvas-scroll" scroll-x scroll-y enhanced show-scrollbar="{{false}}">
+      <view class="img-wrap">
+        <image
+          class="preview-img"
+          src="{{previewSrc}}"
+          mode="scaleToFill"
+          style="width:{{imgW}}px;height:{{imgH}}px;"
+          bindtouchstart="onTouchStart"
+          bindtouchend="onTouchEnd"
+          bindtouchcancel="onTouchEnd"
+        />
+      </view>
+    </scroll-view>
 
-    <view class="zoom-badge" wx:if="{{zoom > 1.01}}" bindtap="onResetZoom">
-      {{zoomText}} · 点此复位
-    </view>
-
-    <view class="zoom-hint" wx:if="{{zoom <= 1.01}}">双指放大看细节 · 拖动平移</view>
-
-    <view class="busy" wx:if="{{busy}}">
+    <view class="rendering" wx:if="{{busy}}">
       <view class="busy-bar">
         <view class="busy-fill" style="width:{{progressPercent}}%"></view>
       </view>
       <view class="busy-text">{{busyText}}</view>
     </view>
+
+    <view class="legend">点格子看色号</view>
   </view>
 
-  <!-- 【临时诊断】定位完删 -->
-  <view class="draw-probe" wx:if="{{drawProbe}}">{{drawProbe}}</view>
+  <!-- 缩放 -->
+  <view class="under">
+    <view class="zoom-row">
+      <view
+        class="zoom-btn {{zoom === item ? 'zoom-on' : ''}}"
+        wx:for="{{zoomSteps}}" wx:key="*this"
+        data-zoom="{{item}}" bindtap="onZoomChange"
+      >{{item}}×</view>
+    </view>
+    <view class="hint">双指缩放看细节 · 拖动平移</view>
+  </view>
 
   <!-- 点格子提示 -->
   <view class="tip" wx:if="{{tip}}">
@@ -177,4 +184,7 @@
 
   <!-- 隐藏的导出画布：canvasToTempFilePath 只认页面里的真实 canvas 节点 -->
   <canvas type="2d" id="export" class="export-canvas" style="width:{{exportCssW}}px;height:{{exportCssH}}px;"></canvas>
+
+  <!-- 隐藏的预览渲染画布：只用来出图，不参与显示 -->
+  <canvas type="2d" id="render" class="export-canvas" style="width:{{rw}}px;height:{{rh}}px;"></canvas>
 </view>

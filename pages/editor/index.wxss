@@ -2,52 +2,39 @@
   padding: 24rpx 24rpx 200rpx;
 }
 
-/* ---------- 画布 ---------- */
-.canvas-wrap {
+/* ---------- 图纸（图片 + scroll-view） ---------- */
+.canvas-box {
   position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400rpx;
   background: #ffffff;
   border-radius: 20rpx;
-  padding: 16rpx;
   box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+  overflow: hidden;
 }
 
-.preview {
+.canvas-scroll {
+  width: 100%;
+  height: 100%;
+}
+
+.img-wrap {
+  min-width: 100%;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-img {
   display: block;
 }
 
-.zoom-badge {
-  position: absolute;
-  right: 20rpx;
-  bottom: 20rpx;
-  padding: 10rpx 20rpx;
-  border-radius: 999rpx;
-  background: rgba(31, 41, 55, 0.85);
-  color: #ffffff;
-  font-size: 22rpx;
-}
-
-.zoom-hint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 20rpx;
-  text-align: center;
-  font-size: 22rpx;
-  color: #9ca3af;
-  pointer-events: none;
-}
-
-.busy {
+.rendering {
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
   bottom: 0;
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255, 255, 255, 0.88);
   border-radius: 20rpx;
   display: flex;
   flex-direction: column;
@@ -74,6 +61,49 @@
 .busy-text {
   font-size: 26rpx;
   color: #6b7280;
+}
+
+.legend {
+  position: absolute;
+  left: 16rpx;
+  bottom: 16rpx;
+  padding: 6rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(31, 41, 55, 0.8);
+  color: #ffffff;
+  font-size: 20rpx;
+}
+
+/* ---------- 缩放 ---------- */
+.under {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14rpx 4rpx;
+}
+
+.zoom-row {
+  display: flex;
+  gap: 10rpx;
+}
+
+.zoom-btn {
+  padding: 8rpx 20rpx;
+  border-radius: 10rpx;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 22rpx;
+}
+
+.zoom-on {
+  background: #1f2937;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.hint {
+  font-size: 20rpx;
+  color: #9ca3af;
 }
 
 /* ---------- 点格子提示 ---------- */
@@ -319,13 +349,3 @@
   pointer-events: none;
 }
 
-/* 【临时诊断】定位完删掉 */
-.draw-probe {
-  margin-top: 12rpx;
-  font-size: 18rpx;
-  color: #b91c1c;
-  background: #fef2f2;
-  border-radius: 8rpx;
-  padding: 10rpx 14rpx;
-  word-break: break-all;
-}

@@ -1,7 +1,5 @@
-/* 结构刻意对齐编辑器页（它的画布显示正常）：
-   普通文档流，不用整页 flex + 100vh。 */
 .page {
-  padding: 0 24rpx;
+  padding: 0 24rpx calc(24rpx + env(safe-area-inset-bottom));
   box-sizing: border-box;
 }
 
@@ -10,7 +8,6 @@
   display: flex;
   align-items: center;
   height: 84rpx;
-  flex-shrink: 0;
 }
 
 .back {
@@ -39,7 +36,6 @@
 
 /* ---------- 主角：当前色号 ---------- */
 .hero {
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 20rpx;
@@ -116,7 +112,6 @@
 }
 
 .hero-bar {
-  flex-shrink: 0;
   height: 8rpx;
   background: #e5e7eb;
   border-radius: 0 0 6rpx 6rpx;
@@ -130,33 +125,44 @@
   transition: width 0.18s linear;
 }
 
-/* ---------- 画布 ---------- */
-.canvas-wrap {
+/* ---------- 图纸（图片 + scroll-view） ---------- */
+.canvas-box {
   position: relative;
+  background: #ffffff;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.canvas-scroll {
+  width: 100%;
+  height: 100%;
+}
+
+.img-wrap {
+  min-width: 100%;
+  min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* ⚠️ 不要加 overflow: hidden（原生层组件被裁剪可能整个不显示） */
-  /* 【临时诊断】底色改成黄的：如果那块区域变黄，说明画布没显示出来；
-     如果还是白的，说明画布显示了但内容被清空。定位完改回 #ffffff。 */
-  background: #fff8dc;
-  border-radius: 16rpx;
-  box-shadow: 0 4rpx 24rpx rgba(0, 0, 0, 0.06);
 }
 
-.pattern {
+.pattern-img {
   display: block;
 }
 
-.zoom-badge {
+.rendering {
   position: absolute;
-  right: 16rpx;
-  bottom: 16rpx;
-  padding: 8rpx 18rpx;
-  border-radius: 999rpx;
-  background: rgba(31, 41, 55, 0.85);
-  color: #ffffff;
-  font-size: 22rpx;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  font-size: 26rpx;
 }
 
 .legend {
@@ -181,29 +187,40 @@
   font-size: 20rpx;
 }
 
-.hint {
-  flex-shrink: 0;
-  text-align: center;
-  font-size: 20rpx;
-  color: #9ca3af;
-  padding: 12rpx 0 4rpx;
+/* ---------- 缩放 + 提示 ---------- */
+.under {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14rpx 4rpx;
 }
 
-/* 【临时诊断】定位完删掉 */
-.debug {
-  flex-shrink: 0;
-  font-size: 18rpx;
-  color: #b91c1c;
-  background: #fef2f2;
-  border-radius: 8rpx;
-  padding: 8rpx 12rpx;
-  margin: 4rpx 0;
-  word-break: break-all;
+.zoom-row {
+  display: flex;
+  gap: 10rpx;
+}
+
+.zoom-btn {
+  padding: 8rpx 20rpx;
+  border-radius: 10rpx;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 22rpx;
+}
+
+.zoom-on {
+  background: #1f2937;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.hint {
+  font-size: 20rpx;
+  color: #9ca3af;
 }
 
 /* ---------- 主操作 ---------- */
 .actions {
-  flex-shrink: 0;
   display: flex;
   gap: 14rpx;
   padding-bottom: 12rpx;
@@ -238,9 +255,8 @@
 
 /* ---------- 色号列表 ---------- */
 .strip {
-  flex-shrink: 0;
   white-space: nowrap;
-  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  padding-bottom: 8rpx;
 }
 
 .chip {
@@ -293,18 +309,28 @@
   color: #9ca3af;
 }
 
-/* ---------- 加载态（盖在画布上，不用 wx:if 挡整页） ---------- */
-.loading-mask {
-  position: absolute;
-  left: 0;
-  right: 0;
+/* ---------- 撤销 ---------- */
+.undo-fab {
+  position: fixed;
+  right: 28rpx;
+  bottom: calc(210rpx + env(safe-area-inset-bottom));
+  padding: 18rpx 30rpx;
+  border-radius: 999rpx;
+  background: rgba(31, 41, 55, 0.9);
+  color: #ffffff;
+  font-size: 24rpx;
+  box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.2);
+}
+
+.undo-dim {
+  opacity: 0.35;
+}
+
+/* ---------- 隐藏渲染画布：只用来出图，不参与显示 ---------- */
+.hidden-canvas {
+  position: fixed;
+  left: -9999px;
   top: 0;
-  bottom: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.92);
-  color: #9ca3af;
-  font-size: 26rpx;
-  border-radius: 16rpx;
+  opacity: 0;
+  pointer-events: none;
 }

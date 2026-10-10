@@ -10,7 +10,7 @@ const { removeBackground } = require('../../utils/background');
 const { excludeColor } = require('../../utils/exclude');
 const { despeckle } = require('../../utils/cleanup');
 const size = require('../../utils/size');
-const gridCanvas = require('../../utils/gridCanvas');
+const gridImage = require('../../utils/gridImage');
 const exportPattern = require('../../utils/exportPattern');
 const projectStore = require('../../utils/projectStore');
 const codec = require('../../utils/projectCodec');
@@ -19,8 +19,13 @@ const app = getApp();
 
 Page({
   data: {
-    previewW: 320,
-    previewH: 320,
+    boxH: 360,
+    imgW: 300,
+    imgH: 300,
+    previewSrc: '',
+    /** 隐藏渲染画布的 CSS 尺寸（要和 backing store 一致） */
+    rw: 1,
+    rh: 1,
     dims: { N: 0, M: 0 },
     colorList: [],
     totalBeadCount: 0,
@@ -45,7 +50,7 @@ Page({
     speckleText: '',
 
     zoom: 1,
-    zoomText: '1.0×',
+    zoomSteps: gridImage.ZOOM_STEPS,
 
     modes: constants.MODES,
     mode: constants.DEFAULT_MODE,
@@ -61,7 +66,6 @@ Page({
 
     exportCssW: 0,
     exportCssH: 0,
-    drawProbe: '',
   },
 
   // ---------- 生命周期 ----------
@@ -87,8 +91,6 @@ Page({
     // 「覆盖并重置进度」。这样反复拖滑块再进拼豆模式不会攒出一堆孤儿项目。
     this.currentProjectId = null;
 
-    // 视图变换（缩放/平移），不改画布元素尺寸，只改内部的 transform
-    this.view = { scale: 1, tx: 0, ty: 0 };
     this.touch = null;
 
     const mode = constants.MODES.find((m) => m.value === settings.mode) || constants.MODES[0];
@@ -113,28 +115,10 @@ Page({
 
   async onReady() {
     if (!this.src) return;
-
-    // 画布尺寸必须在 setData 之后、渲染完成后再取节点，否则 size 是 0
-    const img = store.getPickedImage();
-    const aspect = img && img.width ? img.height / img.width : 1;
     const info = canvasHelper.getWindowInfo();
-    const box = gridCanvas.fitBox(
-      info.windowWidth - 24,
-      Math.round(info.windowHeight * 0.52),
-      aspect
-    );
-    const w = box.w;
-    const h = box.h;
-
-    await new Promise((resolve) => this.setData({ previewW: w, previewH: h }, resolve));
-
-    try {
-      this.display = await canvasHelper.initDisplayCanvas('#preview', this);
-    } catch (e) {
-      wx.showToast({ title: e.message || '画布初始化失败', icon: 'none' });
-      return;
-    }
-
+    this.boxW = info.windowWidth - 24;
+    this.boxH = Math.max(240, Math.round(info.windowHeight * 0.42));
+    this.setData({ boxH: this.boxH });
     await this.generate();
   },
 
@@ -250,7 +234,7 @@ Page({
       this.dims = grid.dims;
 
       this.refreshStats();
-      this.redraw();
+      this.renderPreview();
       this.setData({ busy: false });
 
       app.globalData.result = {
@@ -302,163 +286,89 @@ Page({
 
   // ---------- 绘制 ----------
 
-  redraw() {
-    if (!this.display || !this.grid) return;
-    const { ctx, cssW, cssH, dpr } = this.display;
-    const grid = this.grid;
+  // ---------- 预览出图 ----------
 
-    // 绘制内核与拼豆进度页共用（utils/gridCanvas.js）。
-    // 抽取时用 tools/render-grid.js 的假 ctx 做过逐调用比对，行为与原来的内联实现一致。
+  /**
+   * 预览渲染成图片显示（不用 canvas 直接显示 —— 
+   * 本项目环境里 <canvas type="2d"> 内容画上去了但屏幕不显示，两个页面都中招）。
+   * 见 utils/gridImage.js 顶部的说明。
+   */
+  async renderPreview() {
+    if (!this.grid || this._rendering) return;
+    this._rendering = true;
     try {
-      gridCanvas.draw(ctx, {
-        cssW,
-        cssH,
-        dpr,
+      const cellPx = this.previewCellPx();
+      const w = Math.max(1, Math.round(this.dims.N * cellPx));
+      const h = Math.max(1, Math.round(this.dims.M * cellPx));
+
+      // 先给隐藏画布定 CSS 尺寸（要和 backing store 一致），再取节点
+      if (w !== this.data.rw || h !== this.data.rh) {
+        await new Promise((r) => this.setData({ rw: w, rh: h }, r));
+      }
+      const info = await canvasHelper.selectNode("#render", this);
+      if (!info || !info.node) throw new Error("拿不到渲染画布节点");
+
+      const grid = this.grid;
+      const src = await gridImage.renderToImage(info.node, {
         dims: this.dims,
-        view: this.view,
-        bg: '#ffffff',
+        cellPx,
         getColor: (i, j) => {
           const cell = grid[j][i];
           return cell.isExternal ? constants.EXTERNAL_CELL_COLOR : cell.color;
         },
-        gridLines: { color: 'rgba(0, 0, 0, 0.16)', width: 0.6, minCellPx: 4 },
-        border: { color: 'rgba(0, 0, 0, 0.35)', width: 1 },
       });
-    } catch (err) {
-      // 【临时诊断】真机 canvas 的方法和假 ctx 不完全一致，可能在这里抛错。
-      this.setData({ drawProbe: '★draw 抛错：' + ((err && err.message) || String(err)) });
-      return;
-    }
-
-    // 【临时诊断】画完回读中心像素
-    if (!this._probed) {
-      this._probed = true;
-      try {
-        const canvas = this.display.canvas;
-        const px = ctx.getImageData(canvas.width >> 1, canvas.height >> 1, 1, 1).data;
-        this.setData({
-          drawProbe:
-            `像素 ${px[0]},${px[1]},${px[2]} · canvas ${canvas.width}×${canvas.height} · ` +
-            `css ${cssW}×${cssH} · 视口 scale=${this.view.scale} tx=${this.view.tx} · ` +
-            `网格 ${this.dims.N}×${this.dims.M}`,
-        });
-      } catch (e) {
-        this.setData({ drawProbe: '回读失败：' + ((e && e.message) || String(e)) });
-      }
+      this.setData({ previewSrc: src, imgW: w, imgH: h });
+    } catch (e) {
+      console.error("预览出图失败", e);
+      wx.showToast({ title: (e && e.message) || "预览出图失败", icon: "none" });
+    } finally {
+      this._rendering = false;
     }
   },
 
-  // ---------- 缩放 / 平移 ----------
-
-  clampView() {
-    const { cssW, cssH } = this.display;
-    gridCanvas.clampView(this.view, cssW, cssH);
+  /** 每格渲染多少像素：让整张图在 zoom=1 时完整放进框里 */
+  previewCellPx() {
+    const boxW = this.boxW || 340;
+    const boxH = this.boxH || 360;
+    const base = Math.max(2, Math.floor(Math.min(boxW / this.dims.N, boxH / this.dims.M)));
+    return base * this.data.zoom;
   },
+
+  // ---------- 手势 ----------
 
   onTouchStart(e) {
-    const touches = e.touches || [];
-    this.moved = false;
-    if (touches.length === 1) {
-      this.touch = {
-        mode: 'pan',
-        x: touches[0].x,
-        y: touches[0].y,
-        tx: this.view.tx,
-        ty: this.view.ty,
-      };
-    } else if (touches.length >= 2) {
-      const a = touches[0];
-      const b = touches[1];
-      this.touch = {
-        mode: 'pinch',
-        dist: Math.hypot(b.x - a.x, b.y - a.y),
-        cx: (a.x + b.x) / 2,
-        cy: (a.y + b.y) / 2,
-        scale: this.view.scale,
-        tx: this.view.tx,
-        ty: this.view.ty,
-      };
-      this.moved = true;
-    }
+    const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+    if (!t) return;
+    this.touch = { x: t.clientX, y: t.clientY };
   },
 
-  onTouchMove(e) {
-    const t = this.touch;
-    const touches = e.touches || [];
-    if (!t || !this.display) return;
-
-    if (t.mode === 'pan' && touches.length === 1) {
-      const dx = touches[0].x - t.x;
-      const dy = touches[0].y - t.y;
-      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) this.moved = true;
-      const prevTx = this.view.tx;
-      const prevTy = this.view.ty;
-      this.view.tx = t.tx + dx;
-      this.view.ty = t.ty + dy;
-      this.clampView();
-      // 缩放为 1 时内容正好铺满，拖动不会改变视图 —— 别白白重绘五万格
-      if (this.view.tx !== prevTx || this.view.ty !== prevTy) this.redraw();
-    } else if (t.mode === 'pinch' && touches.length >= 2) {
-      const a = touches[0];
-      const b = touches[1];
-      const dist = Math.hypot(b.x - a.x, b.y - a.y);
-      if (t.dist < 1) return;
-      // 以两指中点为锚点：该点在内容坐标系里的位置保持不变
-      // （锚点要基于「手势开始时的变换」算，所以把 t 里的初值传进去）
-      const { cssW, cssH } = this.display;
-      gridCanvas.zoomTo(
-        this.view,
-        t.cx,
-        t.cy,
-        { scale: t.scale, tx: t.tx, ty: t.ty },
-        (t.scale * dist) / t.dist,
-        cssW,
-        cssH
-      );
-      this.redraw();
-    }
-  },
-
-  onTouchEnd() {
+  async onTouchEnd(e) {
+    const start = this.touch;
     this.touch = null;
-    if (!this.display) return;
-    const s = this.view.scale;
-    if (Math.abs(this.data.zoom - s) > 0.001) {
-      this.setData({ zoom: s, zoomText: s.toFixed(1) + '×' });
-    }
-  },
+    if (!start || !this.grid) return;
+    const t = (e.changedTouches && e.changedTouches[0]) || (e.touches && e.touches[0]);
+    if (!t) return;
+    // 移动过就是在滚动，不算点击
+    if (Math.abs(t.clientX - start.x) > 8 || Math.abs(t.clientY - start.y) > 8) return;
 
-  onResetZoom() {
-    this.view = { scale: 1, tx: 0, ty: 0 };
-    this.setData({ zoom: 1, zoomText: '1.0×' });
-    this.redraw();
-  },
-
-  onCanvasTap(e) {
-    if (!this.grid || !this.display) return;
-    if (this.moved) return; // 刚才是在拖动/缩放，不算点击
-    const detail = e.detail || {};
-    const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
-    // bindtap 的 e.detail.x/y 已经是相对 canvas 的 CSS px，不要再乘 dpr
-    const sx = typeof detail.x === 'number' ? detail.x : touch ? touch.x : NaN;
-    const sy = typeof detail.y === 'number' ? detail.y : touch ? touch.y : NaN;
-    if (isNaN(sx) || isNaN(sy)) return;
-
-    const { cssW, cssH } = this.display;
-    const hit = gridCanvas.screenToCell(sx, sy, this.view, cssW, cssH, this.dims);
+    const rect = await gridImage.queryRect(".preview-img", this);
+    const hit = gridImage.hitTest(t.clientX, t.clientY, rect, this.dims);
     if (!hit.inside) return;
-    const i = hit.i;
-    const j = hit.j;
-
-    const cell = this.grid[j][i];
+    const cell = this.grid[hit.j][hit.i];
     const settings = store.getSettings();
     this.setData({
       tip: {
         color: cell.color,
-        key: cell.isExternal ? '空白' : paletteUtil.getDisplayColorKey(cell.color, settings.colorSystem),
+        key: cell.isExternal ? "空白" : paletteUtil.getDisplayColorKey(cell.color, settings.colorSystem),
         isExternal: !!cell.isExternal,
       },
     });
+  },
+
+  onZoomChange(e) {
+    const zoom = Number(e.currentTarget.dataset.zoom);
+    if (!zoom || zoom === this.data.zoom) return;
+    this.setData({ zoom }, () => this.renderPreview());
   },
 
   onCloseTip() {
@@ -558,7 +468,7 @@ Page({
     this.stats = computeStats(this.grid, this.dims);
     this.initialGridColorKeys = this.stats.initialGridColorKeys;
     this.renderStats();
-    this.redraw();
+    this.renderPreview();
     wx.showToast({ title: `已移除 ${res.removed} 格背景`, icon: 'none' });
   },
 
@@ -572,7 +482,7 @@ Page({
     this.stats = computeStats(this.grid, this.dims);
     this.bgSnapshot = null;
     this.renderStats();
-    this.redraw();
+    this.renderPreview();
   },
 
   // ---------- 排除颜色 ----------
@@ -604,7 +514,7 @@ Page({
     this.excludedColorKeys.add(hex);
     this.stats = computeStats(this.grid, this.dims);
     this.renderStats();
-    this.redraw();
+    this.renderPreview();
     wx.showToast({ title: `已排除，重映射 ${res.remappedCount} 格`, icon: 'none' });
   },
 

@@ -1,7 +1,3 @@
-<!-- ⚠️ 不要用 wx:if 把整个页面挡起来再显示。
-     初始为 false 时 canvas 节点是后创建的，实测会出现
-     「getImageData 读得到内容、但屏幕上不显示」的原生层问题。
-     编辑器页的 canvas 一直挂在模板里，就没事。 -->
 <view class="page">
   <!-- 顶栏 -->
   <view class="topbar">
@@ -30,30 +26,44 @@
     <view class="hero-fill" style="width:{{currentPercent}}%"></view>
   </view>
 
-  <!-- 画布 -->
-  <view class="canvas-wrap" style="height:{{wrapH}}px;">
-    <canvas
-      type="2d"
-      id="pattern"
-      class="pattern"
-      style="width:{{canvasW}}px;height:{{canvasH}}px;"
-      bindtouchstart="onTouchStart"
-      catchtouchmove="onTouchMove"
-      bindtouchend="onTouchEnd"
-      bindtouchcancel="onTouchEnd"
-    ></canvas>
+  <!-- 图纸：图片显示，scroll-view 负责平移 -->
+  <view class="canvas-box" style="height:{{boxH}}px;">
+    <scroll-view
+      class="canvas-scroll"
+      scroll-x
+      scroll-y
+      enhanced
+      show-scrollbar="{{false}}"
+    >
+      <view class="img-wrap">
+        <image
+          class="pattern-img"
+          src="{{patternSrc}}"
+          mode="scaleToFill"
+          style="width:{{imgW}}px;height:{{imgH}}px;"
+          bindtouchstart="onTouchStart"
+          bindtouchend="onTouchEnd"
+          bindtouchcancel="onTouchEnd"
+        />
+      </view>
+    </scroll-view>
 
-    <view class="zoom-badge" wx:if="{{zoom > 1.01}}" bindtap="onResetZoom">{{zoom}}× · 复位</view>
-    <view class="save-warn" wx:if="{{saveError}}">⚠︎ 未保存</view>
+    <view class="rendering" wx:if="{{rendering}}"><text>绘制中…</text></view>
     <view class="legend" wx:if="{{singleColor}}">只显示 {{currentKey}}</view>
-
-    <view class="loading-mask" wx:if="{{!ready}}">
-      <text>加载中…</text>
-    </view>
+    <view class="save-warn" wx:if="{{saveError}}">⚠︎ 未保存</view>
   </view>
 
-  <view class="hint">整张 {{progressPercent}}%（{{doneText}} 颗）· 长按标记整块 · 双指缩放</view>
-  <view class="debug" wx:if="{{debugProbe}}">{{debugProbe}}</view>
+  <!-- 缩放 + 提示 -->
+  <view class="under">
+    <view class="zoom-row">
+      <view
+        class="zoom-btn {{zoom === item ? 'zoom-on' : ''}}"
+        wx:for="{{zoomSteps}}" wx:key="*this"
+        data-zoom="{{item}}" bindtap="onZoomChange"
+      >{{item}}×</view>
+    </view>
+    <view class="hint">整张 {{progressPercent}}%（{{doneText}} 颗）</view>
+  </view>
 
   <!-- 主操作 -->
   <view class="actions">
@@ -79,4 +89,17 @@
       <view class="chip-num">{{item.done}}/{{item.total}}</view>
     </view>
   </scroll-view>
+
+  <!-- 撤销（浮在右下） -->
+  <view class="undo-fab {{undoCount ? '' : 'undo-dim'}}" bindtap="onUndo">
+    撤销<text wx:if="{{undoCount}}"> {{undoCount}}</text>
+  </view>
+
+  <!-- 隐藏的渲染画布：只用来出图，不参与显示 -->
+  <canvas
+    type="2d"
+    id="render"
+    class="hidden-canvas"
+    style="width:{{rw}}px;height:{{rh}}px;"
+  ></canvas>
 </view>
