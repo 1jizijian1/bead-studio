@@ -53,8 +53,9 @@ async function renderToImage(canvasNode, opts) {
     view: { scale: 1, tx: 0, ty: 0 },
     bg: opts.bg || '#ffffff',
     getColor: opts.getColor,
-    // 格子太小就不画网格线，否则整片糊成灰的
-    gridLines: cellPx >= 5 ? { color: 'rgba(0, 0, 0, 0.16)', width: 0.6, minCellPx: 5 } : null,
+    // 网格线很重要：只看当前色时背景是白的，**没有网格线就没法数格子定位**。
+    // 所以门槛放到每格 3px（再小就糊成灰的了）。
+    gridLines: cellPx >= 3 ? { color: 'rgba(0, 0, 0, 0.18)', width: 0.6, minCellPx: 3 } : null,
     border: { color: 'rgba(0, 0, 0, 0.3)', width: 1 },
   });
 

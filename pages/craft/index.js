@@ -19,12 +19,14 @@ const RERENDER_DEBOUNCE = 350;
 
 /**
  * 预计算的显示色。
- * ⚠️ 淡出目标**不能和空白格同色** —— 之前往 #F3F4F6 混、而空白格也是 #F3F4F6，
- * 整张画布糊成一片浅灰，看着就像「没有图片」。
+ * 「只看当前色」时**其他色号直接不画**（和空白格一样是白底）——
+ * 图纸上只剩当前色号的豆子，一眼就能找到该摆哪。
+ * 关掉之后是「显示全部色」：所有色保留但整体压暗，用来看整体效果。
+ *
+ * ⚠️ 压暗目标**不能和空白格同色** —— 之前往 #F3F4F6 混、而空白格也是 #F3F4F6，
+ * 整张图糊成一片浅灰，看着就像「没有图片」。
  */
 const FADE_T = 0.62;
-const FADE_STRONG_T = 0.55;
-const FADE_STRONG_TARGET = '#e5e7eb';
 const DONE_T = 0.55;
 const BLANK_COLOR = '#FFFFFF';
 
@@ -151,7 +153,6 @@ Page({
     const n = this.hexes.length;
     this.solid = new Array(n);
     this.faded = new Array(n);
-    this.faint = new Array(n);
     this.done = new Array(n);
     this.keys = new Array(n);
 
@@ -159,7 +160,6 @@ Page({
       const hex = this.hexes[i];
       this.solid[i] = hex;
       this.faded[i] = paletteUtil.mixHex(hex, '#9ca3af', FADE_T);
-      this.faint[i] = paletteUtil.mixHex(hex, FADE_STRONG_TARGET, FADE_STRONG_T);
       this.done[i] = paletteUtil.mixHex(hex, '#111827', DONE_T);
       this.keys[i] = paletteUtil.getDisplayColorKey(hex, this.colorSystem);
     }
@@ -265,7 +265,6 @@ Page({
     const focus = this.data.singleColor;
     const solid = this.solid;
     const faded = this.faded;
-    const faint = this.faint;
     const doneColors = this.done;
     const EXTERNAL = BLANK_COLOR;
     const EXT_IDX = codec.EXTERNAL_INDEX;
@@ -276,7 +275,9 @@ Page({
       if (idx === EXT_IDX) return EXTERNAL;
       if (codec.getBit(bitmap, k)) return doneColors[idx];
       if (idx === curIdx) return solid[idx];
-      return focus ? faint[idx] : faded[idx];
+      // 只看当前色：**其他色号一律不画**（和空白格一样白），
+      // 图纸上就只剩当前色号的豆子 —— 一眼看到该摆哪
+      return focus ? EXTERNAL : faded[idx];
     };
   },
 
