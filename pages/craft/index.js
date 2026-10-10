@@ -161,6 +161,20 @@ Page({
     // 关掉加载遮罩再画，避免遮罩把首次绘制盖住
     this.setData({ ready: true });
     this.redraw();
+
+    // 【临时诊断】1.5 秒后再画一次，并在**右下角**补一个绿方块。
+    //   只看到绿方块+图案 → 首次绘制被随后的页面更新弄丢了（时序问题）
+    //   两个方块都看不到     → 这块画布根本显示不出来（结构问题）
+    const self = this;
+    setTimeout(function () {
+      if (!self.display) return;
+      self.redraw();
+      const c = self.display.ctx;
+      const cv = self.display.canvas;
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.fillStyle = '#00FF00';
+      c.fillRect(cv.width - 70, cv.height - 70, 60, 60);
+    }, 1500);
   },
 
   onHide() {
