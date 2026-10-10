@@ -51,14 +51,19 @@ Page({
       };
     });
 
-    this.setData({
-      list,
-      empty: list.length === 0,
-      usageText: `已用 ${(usage.currentSizeKB / 1024).toFixed(1)} MB / ${(usage.limitSizeKB / 1024).toFixed(0)} MB`,
-      usageWarn: usage.ratio > 0.8,
-    });
-
-    if (list.length) this.drawThumbs();
+    // setData 是异步的：必须等渲染回调再查缩略图 canvas，否则列表项还没生成、
+    // selectorQuery 一个节点都查不到
+    this.setData(
+      {
+        list,
+        empty: list.length === 0,
+        usageText: `已用 ${(usage.currentSizeKB / 1024).toFixed(1)} MB / ${(usage.limitSizeKB / 1024).toFixed(0)} MB`,
+        usageWarn: usage.ratio > 0.8,
+      },
+      () => {
+        if (list.length) this.drawThumbs();
+      }
+    );
   },
 
   /** 一次查询拿到所有缩略图 canvas 节点，按顺序对应列表项 */

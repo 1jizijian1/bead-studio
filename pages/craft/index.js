@@ -83,8 +83,13 @@ Page({
       wx.showToast({ title: '图纸有改动，部分进度已清理', icon: 'none', duration: 2500 });
     }
 
-    // 先量出画布容器的真实可用区域，再定画布 CSS 尺寸，最后才取 canvas 节点。
-    // （.canvas-wrap 是 flex:1 + min-height:0，高度由布局决定，不会被里面的画布撑开）
+    // ⚠️ 顺序很关键：WXML 里整个页面被 `wx:if="{{ready}}"` 包着 ——
+    // ready 为 false 时 canvas 节点根本不存在，selectorQuery 会查不到，
+    // 报「找不到画布节点」。所以**必须先把页面渲染出来**，再查节点。
+    await new Promise((r) => this.setData({ ready: true, name: p.name }, r));
+
+    // 再量画布容器的真实可用区域（.canvas-wrap 是 flex:1 + min-height:0，
+    // 高度由布局决定，不会被里面的画布撑开）
     const area = await new Promise((resolve) => {
       wx.createSelectorQuery()
         .in(this)
@@ -98,7 +103,10 @@ Page({
     const box = gridCanvas.fitBox(availW, Math.max(120, availH), this.dims.M / this.dims.N);
     this.cssW = box.w;
     this.cssH = box.h;
-    await new Promise((r) => this.setData({ canvasW: box.w, canvasH: box.h }, r));
+
+    if (box.w !== this.data.canvasW || box.h !== this.data.canvasH) {
+      await new Promise((r) => this.setData({ canvasW: box.w, canvasH: box.h }, r));
+    }
 
     try {
       this.display = await canvasHelper.initDisplayCanvas('#pattern', this);
@@ -109,7 +117,6 @@ Page({
 
     this.restoreView(p.view);
     this.refreshColorList();
-    this.setData({ ready: true, name: p.name });
     this.redraw();
   },
 

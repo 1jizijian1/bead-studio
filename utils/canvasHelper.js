@@ -38,7 +38,13 @@ function selectNode(selector, comp) {
  */
 async function initDisplayCanvas(selector, comp) {
   const info = await selectNode(selector, comp);
-  if (!info) throw new Error(`找不到画布节点：${selector}`);
+  if (!info) {
+    // 最常见的两个原因写进报错里，省得下次还要查一遍
+    throw new Error(
+      `找不到画布节点 ${selector}。可能原因：① 外层有 wx:if，节点还没渲染出来（要先 setData 再取节点）；` +
+        `② 在 onLoad 里取的（此时还没有尺寸，要用 onReady）；③ 选择器写错了`
+    );
+  }
   const canvas = info.node;
   const dpr = getPixelRatio();
   const cssW = info.width;
