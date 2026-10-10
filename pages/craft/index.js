@@ -347,25 +347,51 @@ Page({
       border: { color: 'rgba(0, 0, 0, 0.3)', width: 1 },
     });
 
-    // 【临时诊断】画完回读画布中心的像素，判断是「没画」还是「画了但颜色是白的」。
-    // 定位完就删。
+    // 【临时诊断】定位完就删。
+    // 1) 在画布左上角画一个品红方块 —— 用户看得见就说明画布本身能显示，
+    //    看不见就说明问题在「画布没显示出来」而不是「颜色不对」。
+    // 2) 回读 9 个点的颜色，数有多少不是白的。
+    // 3) 查画布在屏幕上的真实位置和尺寸。
     if (!this._probed) {
       this._probed = true;
+      const canvas = this.display.canvas;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = '#FF00FF';
+      ctx.fillRect(4, 4, 44, 44);
+
+      let nonWhite = 0;
+      const samples = [];
       try {
-        const canvas = this.display.canvas;
-        const px = ctx.getImageData(canvas.width >> 1, canvas.height >> 1, 1, 1).data;
-        const remain = this.colorTotal[curIdx] - this.colorDone[curIdx];
-        const share = this.beadTotal ? ((remain / this.beadTotal) * 100).toFixed(1) : '0';
-        this.setData({
-          debugProbe:
-            `中心像素 rgb(${px[0]},${px[1]},${px[2]}) · ` +
-            `canvas ${canvas.width}×${canvas.height} · css ${this.display.cssW}×${this.display.cssH} · ` +
-            `网格 ${this.dims.N}×${this.dims.M} · ` +
-            `当前色 ${this.keys[curIdx]} 剩 ${remain} 颗（占 ${share}%）`,
-        });
+        for (let gy = 1; gy <= 3; gy++) {
+          for (let gx = 1; gx <= 3; gx++) {
+            const x = Math.floor((canvas.width * gx) / 4);
+            const y = Math.floor((canvas.height * gy) / 4);
+            const px = ctx.getImageData(x, y, 1, 1).data;
+            samples.push(`${px[0]},${px[1]},${px[2]}`);
+            if (px[0] < 250 || px[1] < 250 || px[2] < 250) nonWhite++;
+          }
+        }
       } catch (e) {
-        this.setData({ debugProbe: '回读失败：' + (e.message || e) });
+        samples.push('回读失败:' + (e.message || e));
       }
+
+      const remain = this.colorTotal[curIdx] - this.colorDone[curIdx];
+      const share = this.beadTotal ? ((remain / this.beadTotal) * 100).toFixed(1) : '0';
+
+      wx.createSelectorQuery()
+        .in(this)
+        .select('#pattern')
+        .boundingClientRect()
+        .exec((res) => {
+          const r = res && res[0] ? res[0] : {};
+          this.setData({
+            debugProbe:
+              `非白点 ${nonWhite}/9 [${samples.join(' | ')}] · ` +
+              `canvas ${canvas.width}×${canvas.height} · ` +
+              `屏幕 ${Math.round(r.left || 0)},${Math.round(r.top || 0)} 尺寸 ${Math.round(r.width || 0)}×${Math.round(r.height || 0)} · ` +
+              `当前色 ${this.keys[curIdx]} 剩 ${remain}（${share}%）`,
+          });
+        });
     }
   },
 
