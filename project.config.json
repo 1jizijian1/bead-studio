@@ -4,6 +4,7 @@
   "appid": "wx99e5b33d503072dc",
   "compileType": "miniprogram",
   "miniprogramRoot": "./",
+  "cloudfunctionRoot": "cloudfunctions/",
   "libVersion": "3.5.0",
   "setting": {
     "es6": true,

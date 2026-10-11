@@ -135,8 +135,13 @@ function sampleImageData(src, maxEdge) {
   });
 }
 
-/** 把页面里的导出画布导成临时文件 */
-function exportCanvasToFile(canvas, w, h, comp) {
+/**
+ * 把页面里的导出画布导成临时文件。
+ * @param {object} [opts] { destWidth, destHeight, fileType, quality }
+ *   内容安全接口限制图片 ≤1MB，所以送检时要用缩小版（见 utils/contentCheck.js）
+ */
+function exportCanvasToFile(canvas, w, h, comp, opts) {
+  const o = opts || {};
   return new Promise((resolve, reject) => {
     wx.canvasToTempFilePath(
       {
@@ -145,10 +150,10 @@ function exportCanvasToFile(canvas, w, h, comp) {
         y: 0,
         width: w,
         height: h,
-        destWidth: w,
-        destHeight: h,
-        fileType: 'png',
-        quality: 1,
+        destWidth: o.destWidth || w,
+        destHeight: o.destHeight || h,
+        fileType: o.fileType || 'png',
+        quality: o.quality === undefined ? 1 : o.quality,
         success: (res) => resolve(res.tempFilePath),
         fail: (err) => reject(new Error((err && err.errMsg) || '导出图片失败')),
       },

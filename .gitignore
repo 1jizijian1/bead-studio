@@ -14,3 +14,6 @@ tools/*-result.png
 tools/ds-*.png
 tools/final.png
 tools/export-preview.png
+
+# 云函数的依赖（部署时用「云端安装依赖」，不要提交）
+cloudfunctions/**/node_modules/

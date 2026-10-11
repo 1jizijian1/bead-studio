@@ -4,6 +4,7 @@ const canvasHelper = require('../../utils/canvasHelper');
 const gridImage = require('../../utils/gridImage');
 const cardImage = require('../../utils/cardImage');
 const cloud = require('../../utils/cloud');
+const contentCheck = require('../../utils/contentCheck');
 
 const BLANK_COLOR = '#FFFFFF';
 
@@ -99,10 +100,14 @@ Page({
 
     try {
       const patternPath = await this.renderPatternThumb();
+      // 分享时要拿它送内容安全检测（见 uploadForShare）
+      this.patternPath = patternPath;
 
       const info = await canvasHelper.selectNode('#card', this);
       if (!info || !info.node) throw new Error('拿不到卡片画布');
       const canvas = info.node;
+      // 保存节点：送检打卡图时要用它导一张缩小版
+      this.cardCanvas = canvas;
 
       // 照片和图纸都按 Image 加载（canvas.createImage，小程序没有全局 Image）
       let photoImg = null;
@@ -186,17 +191,59 @@ Page({
     await canvasHelper.saveToAlbum(this.data.cardSrc);
   },
 
-  onShareCard() {
+  async onShareCard() {
     if (!this.data.cardSrc) {
       wx.showToast({ title: '还没有打卡图', icon: 'none' });
       return;
     }
+
+    // 这张图会经分享发出去 —— 发布前先送内容安全检测
+    const ok = await this.checkBeforePublish(this.data.cardSrc, true);
+    if (!ok) return;
+
     if (wx.showShareImageMenu) {
       wx.showShareImageMenu({ path: this.data.cardSrc });
     } else {
       wx.previewImage({ urls: [this.data.cardSrc] });
       wx.showToast({ title: '长按图片可转发给好友', icon: 'none', duration: 2000 });
     }
+  },
+
+  /**
+   * 发布前的内容安全检测（微信审核要求）。
+   * @param {string} filePath 要送检的图片
+   * @param {boolean} useSmallCopy 打卡图含实拍照片、可能超过接口的 1MB 限制，
+   *   这种情况先导一张缩小版送检
+   * @returns {Promise<boolean>} 是否放行
+   */
+  async checkBeforePublish(filePath, useSmallCopy) {
+    let checkPath = filePath;
+    if (useSmallCopy && this.cardCanvas) {
+      try {
+        checkPath = await canvasHelper.exportCanvasToFile(this.cardCanvas, 720, 1080, this, {
+          destWidth: 360,
+          destHeight: 540,
+          fileType: 'jpg',
+          quality: 60,
+        });
+      } catch (e) {
+        checkPath = filePath; // 导不出来就用原图，让云端自己判断
+      }
+    }
+
+    wx.showLoading({ title: '检查中…', mask: true });
+    const res = await contentCheck.checkImageFile(checkPath);
+    wx.hideLoading();
+
+    if (!res.pass) {
+      wx.showModal({
+        title: '内容不合规',
+        content: '内容安全检测判定这张图含违规信息，无法分享。',
+        showCancel: false,
+      });
+      return false;
+    }
+    return true;
   },
 
   // ---------- 分享「图纸」（好友点开能自己拼） ----------
@@ -225,6 +272,12 @@ Page({
   async uploadForShare() {
     if (this.shareId) return this.shareId;
     if (!cloud.isReady()) return null;
+
+    // 分享 = 把内容发布出去，发布前必须送内容安全检测
+    if (this.patternPath) {
+      const ok = await this.checkBeforePublish(this.patternPath, false);
+      if (!ok) return null;
+    }
 
     wx.showLoading({ title: '准备分享…', mask: true });
     const res = await cloud.uploadPattern({
